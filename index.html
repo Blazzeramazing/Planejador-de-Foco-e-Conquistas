@@ -203,7 +203,7 @@
                     <div class="glassmorphism rounded-2xl p-6">
                         <h2 class="text-xl font-bold mb-4">Progresso de Leitura</h2>
                         <div id="books-container" class="space-y-3">
-                             <!-- Livros serão injetados aqui -->
+                                 <!-- Livros serão injetados aqui -->
                         </div>
                          <button id="add-book-button" class="mt-4 w-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Adicionar Livro</button>
                     </div>
@@ -244,7 +244,7 @@
         </div>
     </div>
     
-     <!-- Toast de Notificação -->
+      <!-- Toast de Notificação -->
     <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-5 rounded-lg shadow-lg opacity-0 translate-y-10 transition-all duration-300">
         <p id="toast-message"></p>
     </div>
@@ -385,7 +385,7 @@
             document.getElementById('modal-cancel-button').onclick = closeModal;
             document.getElementById('modal-confirm-button').onclick = () => {
                 onConfirm();
-                closeModal();
+                // We don't call closeModal here anymore, the onConfirm callback will handle refreshing or closing.
             };
         }
 
@@ -408,10 +408,8 @@
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    // Para o ambiente local, você pode querer fazer login anônimo ou ter uma tela de login/senha
-                    await signInAnonymously(auth);
-                }
+                } 
+                // In a local environment without a token, the user will be presented with the login form.
             } catch (error) {
                 console.error("Authentication Error:", error);
                 showToast("Erro na autenticação.", "error");
@@ -714,22 +712,22 @@
                 </div>
                 <div class="space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
                      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div class="glassmorphism p-4 rounded-lg">
-                            <p class="text-3xl font-bold">${gameData.points || 0}</p>
-                            <p class="text-sm opacity-80">Pontos</p>
-                        </div>
                          <div class="glassmorphism p-4 rounded-lg">
-                            <p class="text-3xl font-bold">${gameData.goalsCompleted || 0}</p>
-                            <p class="text-sm opacity-80">Metas</p>
-                        </div>
-                        <div class="glassmorphism p-4 rounded-lg">
-                            <p class="text-3xl font-bold">${gameData.pomodoroCycles || 0}</p>
-                            <p class="text-sm opacity-80">Ciclos Foco</p>
-                        </div>
-                        <div class="glassmorphism p-4 rounded-lg">
-                            <p class="text-3xl font-bold">${gameData.streak || 1} dias</p>
-                            <p class="text-sm opacity-80">Sequência</p>
-                        </div>
+                             <p class="text-3xl font-bold">${gameData.points || 0}</p>
+                             <p class="text-sm opacity-80">Pontos</p>
+                         </div>
+                          <div class="glassmorphism p-4 rounded-lg">
+                             <p class="text-3xl font-bold">${gameData.goalsCompleted || 0}</p>
+                             <p class="text-sm opacity-80">Metas</p>
+                         </div>
+                         <div class="glassmorphism p-4 rounded-lg">
+                             <p class="text-3xl font-bold">${gameData.pomodoroCycles || 0}</p>
+                             <p class="text-sm opacity-80">Ciclos Foco</p>
+                         </div>
+                         <div class="glassmorphism p-4 rounded-lg">
+                             <p class="text-3xl font-bold">${gameData.streak || 1} dias</p>
+                             <p class="text-sm opacity-80">Sequência</p>
+                         </div>
                     </div>
                     <div>
                         <h4 class="font-bold text-lg mb-4">Emblemas</h4>
@@ -771,9 +769,9 @@
                 
                 if (filteredDocs.length === 0) {
                      goalsContainer.innerHTML = `<div class="text-center py-8 text-gray-400">
-                            <p>Nenhuma meta pendente encontrada.</p>
-                            <p class="text-sm">${currentCategoryFilter === 'all' ? 'Adicione uma nova meta ou veja suas conquistas no arquivo!' : `Tente selecionar outra categoria.`}</p>
-                        </div>`;
+                             <p>Nenhuma meta pendente encontrada.</p>
+                             <p class="text-sm">${currentCategoryFilter === 'all' ? 'Adicione uma nova meta ou veja suas conquistas no arquivo!' : `Tente selecionar outra categoria.`}</p>
+                         </div>`;
                 } else {
                      goalsContainer.innerHTML = pageItems.map(doc => renderGoal(doc.id, doc.data())).join('');
                 }
@@ -816,6 +814,7 @@
                     if (button.dataset.action === 'delete') {
                         openConfirmModal('Confirmar Exclusão', 'Tem certeza que deseja apagar esta meta e todos os seus passos? Esta ação não pode ser desfeita.', () => {
                              deleteDoc(getDocRef('goals', goalId));
+                             closeModal();
                         });
                     }
                     if (button.dataset.action === 'toggle') {
@@ -862,26 +861,26 @@
             });
 
              goalsContainer.addEventListener('submit', async e => {
-                e.preventDefault();
-                const form = e.target;
-                if (form.dataset.action === 'add-subtask') {
-                    const goalId = form.dataset.goalId;
-                    const input = form.querySelector('input[type="text"]');
-                    const text = input.value.trim();
+                 e.preventDefault();
+                 const form = e.target;
+                 if (form.dataset.action === 'add-subtask') {
+                     const goalId = form.dataset.goalId;
+                     const input = form.querySelector('input[type="text"]');
+                     const text = input.value.trim();
 
-                    if (text) {
-                        const goalRef = getDocRef('goals', goalId);
-                        const goalDoc = await getDoc(goalRef);
-                        if (goalDoc.exists()) {
-                            const goalData = goalDoc.data();
-                            const subtasks = goalData.subtasks || [];
-                            subtasks.push({ text: text, completed: false });
-                            await updateDoc(goalRef, { subtasks });
-                            input.value = '';
-                        }
-                    }
-                }
-            });
+                     if (text) {
+                         const goalRef = getDocRef('goals', goalId);
+                         const goalDoc = await getDoc(goalRef);
+                         if (goalDoc.exists()) {
+                             const goalData = goalDoc.data();
+                             const subtasks = goalData.subtasks || [];
+                             subtasks.push({ text: text, completed: false });
+                             await updateDoc(goalRef, { subtasks });
+                             input.value = '';
+                         }
+                     }
+                 }
+             });
         }
 
         function renderGoal(id, data) {
@@ -937,10 +936,10 @@
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0 ml-4">
                              <button data-id="${id}" data-action="toggle" class="p-1 rounded-full hover:bg-white/20">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            </button>
-                            <button data-id="${id}" data-action="edit" class="p-1 rounded-full hover:bg-white/20"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
-                            <button data-id="${id}" data-action="delete" class="p-1 rounded-full hover:bg-white/20"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                             </button>
+                             <button data-id="${id}" data-action="edit" class="p-1 rounded-full hover:bg-white/20"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                             <button data-id="${id}" data-action="delete" class="p-1 rounded-full hover:bg-white/20"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>
                         </div>
                     </div>
                     <div class="text-xs opacity-60 mt-2">Prazo: ${deadline}</div>
@@ -1009,7 +1008,9 @@
         }
         
         async function openArchiveModal() {
-            const completedGoalsSnapshot = await getDocs(query(getCollectionRef('goals'), where('completed', '==', true)));
+            // Pega as metas concluídas mais recentes primeiro
+            const q = query(getCollectionRef('goals'), where('completed', '==', true), orderBy('completedAt', 'desc'));
+            const completedGoalsSnapshot = await getDocs(q);
             const completedGoals = completedGoalsSnapshot.docs;
             const itemsPerPage = 5;
             
@@ -1029,16 +1030,18 @@
             const renderPage = (page) => {
                 const container = document.getElementById('archive-container');
                 const paginationContainer = document.getElementById('archive-pagination');
+                if (!container) return; // Se o modal foi fechado, não faz nada
+                
                 const start = (page - 1) * itemsPerPage;
                 const end = start + itemsPerPage;
                 const pageItems = completedGoals.slice(start, end);
 
                 if (completedGoals.length === 0) {
                      container.innerHTML = `<div class="text-center py-8 text-gray-400">
-                        <p>Você ainda não concluiu nenhuma meta.</p>
-                        <p class="text-sm">Continue focado e suas vitórias aparecerão aqui!</p>
-                   </div>`;
-                   paginationContainer.innerHTML = '';
+                         <p>Você ainda não concluiu nenhuma meta.</p>
+                         <p class="text-sm">Continue focado e suas vitórias aparecerão aqui!</p>
+                    </div>`;
+                    paginationContainer.innerHTML = '';
                 } else {
                      container.innerHTML = pageItems.map(doc => renderArchivedGoal(doc.id, doc.data())).join('');
                      renderPaginationControls(paginationContainer, page, completedGoals.length, itemsPerPage, renderPage);
@@ -1046,26 +1049,30 @@
             };
 
             renderPage(1);
+            
+            const archiveContainer = document.getElementById('archive-container');
+            if (archiveContainer) {
+                archiveContainer.addEventListener('click', async e => {
+                    const button = e.target.closest('button');
+                    if (!button || !button.dataset.id) return;
+                    
+                    const goalId = button.dataset.id;
+                    
+                    if (button.dataset.action === 'restore') {
+                        await updateDoc(getDocRef('goals', goalId), { completed: false, completedAt: null });
+                        showToast('Meta restaurada para a lista principal!', 'info');
+                        await openArchiveModal(); 
+                    }
 
-            document.getElementById('archive-container').addEventListener('click', e => {
-                const button = e.target.closest('button');
-                if (!button || !button.dataset.id) return;
-                
-                const goalId = button.dataset.id;
-                
-                if (button.dataset.action === 'restore') {
-                    updateDoc(getDocRef('goals', goalId), { completed: false, completedAt: null });
-                    showToast('Meta restaurada para a lista principal!', 'info');
-                    closeModal(); // Recarrega a lista principal
-                }
-
-                if (button.dataset.action === 'delete-permanent') {
-                     openConfirmModal('Exclusão Permanente', 'Esta ação é irreversível. Deseja apagar permanentemente esta conquista?', () => {
-                        deleteDoc(getDocRef('goals', goalId));
-                        closeModal(); // Recarrega a lista principal
-                    });
-                }
-            });
+                    if (button.dataset.action === 'delete-permanent') {
+                         openConfirmModal('Exclusão Permanente', 'Esta ação é irreversível. Deseja apagar permanentemente esta conquista?', async () => {
+                             await deleteDoc(getDocRef('goals', goalId));
+                             showToast('Meta excluída com sucesso!', 'success');
+                             await openArchiveModal();
+                         });
+                    }
+                });
+            }
         }
         
         function renderArchivedGoal(id, data) {
@@ -1076,21 +1083,21 @@
                     <div class="flex justify-between items-start">
                         <div>
                              <div class="flex items-center gap-2 mb-1 flex-wrap">
-                                <h4 class="font-bold text-lg line-through">${data.title}</h4>
-                                ${data.category ? `<span class="${color.tagBg} ${color.tagText} text-xs font-semibold px-2.5 py-0.5 rounded-full">${data.category}</span>` : ''}
-                            </div>
+                                 <h4 class="font-bold text-lg line-through">${data.title}</h4>
+                                 ${data.category ? `<span class="${color.tagBg} ${color.tagText} text-xs font-semibold px-2.5 py-0.5 rounded-full">${data.category}</span>` : ''}
+                             </div>
                             <p class="text-sm opacity-80">${data.description}</p>
                             ${data.summary ? `<p class="text-xs mt-2 bg-black bg-opacity-20 p-2 rounded-md"><em>${data.summary}</em></p>` : ''}
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0 ml-4">
                              <button data-id="${id}" data-action="restore" title="Restaurar Meta" class="p-1 rounded-full hover:bg-white/20">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            <button data-id="${id}" data-action="delete-permanent" title="Excluir Permanentemente" class="p-1 rounded-full hover:bg-white/20">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
-                            </button>
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                   <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                 </svg>
+                             </button>
+                             <button data-id="${id}" data-action="delete-permanent" title="Excluir Permanentemente" class="p-1 rounded-full hover:bg-white/20">
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                             </button>
                         </div>
                     </div>
                      <div class="text-xs opacity-60 mt-2">Concluída em: ${completedDate}</div>
@@ -1283,8 +1290,8 @@
                 if (action === 'delete') {
                     openConfirmModal('Excluir Entrada', 'Tem certeza que deseja apagar esta entrada do diário?', () => {
                         deleteDoc(getDocRef('journal', entryId)).then(() => {
-                           closeModal();
-                           openJournalModal();
+                            closeModal();
+                            openJournalModal();
                         });
                     });
                 }
@@ -1449,20 +1456,21 @@
             
             todoList.addEventListener('click', e => {
                  const target = e.target.closest('li button') || e.target.closest('li input');
-                 if(!target) return;
-                 const todoId = target.dataset.id;
-                 
-                 if (target.type === 'checkbox') {
-                    const wasCompleted = target.dataset.wasCompleted === 'true';
-                    if (target.checked && !wasCompleted) {
-                        updateGamification({ points: 5, todosCompleted: 1 });
-                    }
-                    target.dataset.wasCompleted = target.checked;
-                     updateDoc(getDocRef('todos', todoId), { completed: target.checked });
+                  if(!target) return;
+                  const todoId = target.dataset.id;
+                  
+                  if (target.type === 'checkbox') {
+                     const wasCompleted = target.dataset.wasCompleted === 'true';
+                     if (target.checked && !wasCompleted) {
+                         updateGamification({ points: 5, todosCompleted: 1 });
+                     }
+                     target.dataset.wasCompleted = target.checked;
+                      updateDoc(getDocRef('todos', todoId), { completed: target.checked });
                  } else if (target.dataset.action === 'delete') {
-                    openConfirmModal('Confirmar Exclusão', 'Apagar esta tarefa?', () => {
-                         deleteDoc(getDocRef('todos', todoId));
-                    });
+                     openConfirmModal('Confirmar Exclusão', 'Apagar esta tarefa?', () => {
+                          deleteDoc(getDocRef('todos', todoId));
+                          closeModal();
+                     });
                  }
             });
         }
@@ -1496,9 +1504,9 @@
             
             booksContainer.addEventListener('change', e => {
                  if (e.target.dataset.action === 'update-page') {
-                     const bookId = e.target.dataset.id;
-                     const newPage = e.target.value;
-                     updateDoc(getDocRef('books', bookId), { page: newPage });
+                      const bookId = e.target.dataset.id;
+                      const newPage = e.target.value;
+                      updateDoc(getDocRef('books', bookId), { page: newPage });
                  }
             });
             booksContainer.addEventListener('click', e => {
@@ -1507,6 +1515,7 @@
                 const bookId = target.dataset.id;
                 openConfirmModal('Confirmar Exclusão', 'Apagar este livro da lista?', () => {
                     deleteDoc(getDocRef('books', bookId));
+                    closeModal();
                 });
             });
         }
@@ -1531,21 +1540,21 @@
         function openBookModal() {
             const modalHTML = `
                  <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-2xl font-bold">Adicionar Livro</h3>
-                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-                <form id="book-form">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Título do Livro</label>
-                        <input type="text" id="book-title" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" required>
-                    </div>
-                    <div class="flex justify-end gap-4">
-                        <button type="button" id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Adicionar</button>
-                    </div>
-                </form>
+                     <h3 class="text-2xl font-bold">Adicionar Livro</h3>
+                     <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                     </button>
+                 </div>
+                 <form id="book-form">
+                     <div class="mb-4">
+                         <label class="block text-sm font-medium text-gray-300 mb-1">Título do Livro</label>
+                         <input type="text" id="book-title" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" required>
+                     </div>
+                     <div class="flex justify-end gap-4">
+                         <button type="button" id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Adicionar</button>
+                     </div>
+                 </form>
             `;
             openModal(modalHTML);
             document.getElementById('modal-close-button').onclick = closeModal;
@@ -1568,23 +1577,24 @@
                 imagesContainer.innerHTML = imagesHtml || '<p class="text-xs text-gray-400 col-span-2 text-center">Adicione imagens que te inspiram.</p>';
             });
             
-             document.getElementById('add-image-button').onclick = () => openImageModal();
-             
-             imagesContainer.addEventListener('click', e => {
-                 const deleteButton = e.target.closest('button[data-action="delete-image"]');
-                 if(deleteButton) {
-                     e.stopPropagation(); // Prevent image modal from opening
-                     openConfirmModal('Confirmar Exclusão', 'Apagar esta imagem do painel?', () => {
-                        deleteDoc(getDocRef('images', deleteButton.dataset.id));
-                     });
-                     return;
-                 }
+              document.getElementById('add-image-button').onclick = () => openImageModal();
+              
+              imagesContainer.addEventListener('click', e => {
+                   const deleteButton = e.target.closest('button[data-action="delete-image"]');
+                   if(deleteButton) {
+                        e.stopPropagation(); // Prevent image modal from opening
+                        openConfirmModal('Confirmar Exclusão', 'Apagar esta imagem do painel?', () => {
+                             deleteDoc(getDocRef('images', deleteButton.dataset.id));
+                             closeModal();
+                        });
+                        return;
+                   }
 
-                 const imageWrapper = e.target.closest('.inspiration-image-wrapper');
-                 if (imageWrapper) {
-                     openImageFocusModal(imageWrapper.dataset.url, imageWrapper.dataset.description);
-                 }
-             });
+                   const imageWrapper = e.target.closest('.inspiration-image-wrapper');
+                   if (imageWrapper) {
+                        openImageFocusModal(imageWrapper.dataset.url, imageWrapper.dataset.description);
+                   }
+              });
         }
         
         function renderImage(id, data) {
@@ -1597,7 +1607,7 @@
                         <p class="text-white text-xs text-center truncate">${truncatedDescription}</p>
                     </div>
                      <button data-id="${id}" data-action="delete-image" class="absolute top-1 right-1 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                      </button>
                 </div>
             `;
@@ -1644,87 +1654,126 @@
         
         function openImageModal() {
              const modalHTML = `
-                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-2xl font-bold">Adicionar Imagem</h3>
-                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-                <form id="image-form">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">URL da Imagem</label>
-                        <input type="url" id="image-url" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" required>
-                    </div>
-                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
-                        <input type="text" id="image-description" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                    </div>
-                    <div class="flex justify-end gap-4">
-                        <button type="button" id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Adicionar</button>
-                    </div>
-                </form>
-            `;
-            openModal(modalHTML);
-            document.getElementById('modal-close-button').onclick = closeModal;
-            document.getElementById('modal-cancel-button').onclick = closeModal;
-            document.getElementById('image-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await addDoc(getCollectionRef('images'), { 
-                    url: document.getElementById('image-url').value,
-                    description: document.getElementById('image-description').value
-                });
-                closeModal();
-            });
+                  <div class="flex justify-between items-center mb-6">
+                      <h3 class="text-2xl font-bold">Adicionar Imagem</h3>
+                      <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
+                  </div>
+                  <form id="image-form">
+                      <div class="mb-4">
+                          <label class="block text-sm font-medium text-gray-300 mb-1">URL da Imagem</label>
+                          <input type="url" id="image-url" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" required>
+                      </div>
+                       <div class="mb-4">
+                          <label class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
+                          <input type="text" id="image-description" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                      </div>
+                      <div class="flex justify-end gap-4">
+                          <button type="button" id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                          <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Adicionar</button>
+                      </div>
+                  </form>
+             `;
+             openModal(modalHTML);
+             document.getElementById('modal-close-button').onclick = closeModal;
+             document.getElementById('modal-cancel-button').onclick = closeModal;
+             document.getElementById('image-form').addEventListener('submit', async (e) => {
+                 e.preventDefault();
+                 await addDoc(getCollectionRef('images'), { 
+                     url: document.getElementById('image-url').value,
+                     description: document.getElementById('image-description').value
+                 });
+                 closeModal();
+             });
         }
         
         // --- CONFIGURAÇÕES (SETTINGS) ---
         async function openSettingsModal() {
-             const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId));
-             const settings = userDoc.data() || {};
-             const modalHTML = `
-                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-2xl font-bold">Configurações de Aparência</h3>
-                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-                <form id="settings-form">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-300 mb-1">URL da Imagem de Fundo</label>
-                        <input type="url" id="bg-image-url" value="${settings.backgroundImage || ''}" placeholder="Deixe em branco para remover" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
-                    </div>
-                    <div class="mb-4 flex items-center gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Cor do Texto Principal</label>
-                            <input type="color" id="text-color" value="${settings.textColor || '#FFFFFF'}" class="w-16 h-10 bg-gray-700 border-none cursor-pointer">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Cor dos Cards</label>
-                            <input type="color" id="card-color" value="${settings.cardColor || '#FFFFFF'}" class="w-16 h-10 bg-gray-700 border-none cursor-pointer">
-                        </div>
-                    </div>
-                    <div class="flex justify-end gap-4 mt-8">
-                        <button type="button" id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Salvar</button>
-                    </div>
-                </form>
-            `;
-            openModal(modalHTML);
-            document.getElementById('modal-close-button').onclick = closeModal;
-            document.getElementById('modal-cancel-button').onclick = closeModal;
-            document.getElementById('settings-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const userSettings = {
-                    backgroundImage: document.getElementById('bg-image-url').value,
-                    textColor: document.getElementById('text-color').value,
-                    cardColor: document.getElementById('card-color').value
-                };
-                await setDoc(doc(db, 'artifacts', appId, 'users', userId), userSettings, { merge: true });
-                closeModal();
-                showToast('Configurações salvas!', 'success');
-            });
+               const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId));
+               const settings = userDoc.data() || {};
+               const modalHTML = `
+                     <div class="flex justify-between items-center mb-6">
+                         <h3 class="text-2xl font-bold">Configurações de Aparência</h3>
+                         <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                         </button>
+                     </div>
+                     <form id="settings-form">
+                         <div class="mb-4">
+                             <label class="block text-sm font-medium text-gray-300 mb-1">URL da Imagem de Fundo</label>
+                             <input type="url" id="bg-image-url" value="${settings.backgroundImage || ''}" placeholder="Deixe em branco para remover" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                         </div>
+                         <div class="mb-4 flex items-center gap-4">
+                             <div>
+                                 <label class="block text-sm font-medium text-gray-300 mb-1">Cor do Texto Principal</label>
+                                 <input type="color" id="text-color" value="${settings.textColor || '#FFFFFF'}" class="w-16 h-10 bg-gray-700 border-none cursor-pointer">
+                             </div>
+                             <div>
+                                 <label class="block text-sm font-medium text-gray-300 mb-1">Cor dos Cards</label>
+                                 <input type="color" id="card-color" value="${settings.cardColor || '#FFFFFF'}" class="w-16 h-10 bg-gray-700 border-none cursor-pointer">
+                             </div>
+                         </div>
+                         <div class="flex justify-end gap-4 mt-8">
+                             <button type="button" id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                             <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Salvar</button>
+                         </div>
+                     </form>
+               `;
+             openModal(modalHTML);
+             document.getElementById('modal-close-button').onclick = closeModal;
+             document.getElementById('modal-cancel-button').onclick = closeModal;
+             document.getElementById('settings-form').addEventListener('submit', async (e) => {
+                 e.preventDefault();
+                 const userSettings = {
+                     backgroundImage: document.getElementById('bg-image-url').value,
+                     textColor: document.getElementById('text-color').value,
+                     cardColor: document.getElementById('card-color').value
+                 };
+                 await setDoc(doc(db, 'artifacts', appId, 'users', userId), userSettings, { merge: true });
+                 closeModal();
+                 showToast('Configurações salvas!', 'success');
+             });
         }
+       
+       // --- HELPERS ---
+       function renderPaginationControls(container, currentPage, totalItems, itemsPerPage, onPageClick) {
+            container.innerHTML = '';
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            if (totalPages <= 1) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex justify-center items-center gap-2';
+
+            // Previous Button
+            const prevButton = document.createElement('button');
+            prevButton.textContent = 'Anterior';
+            prevButton.disabled = currentPage === 1;
+            prevButton.className = 'px-3 py-1 text-sm rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed';
+            prevButton.onclick = () => onPageClick(currentPage - 1);
+            wrapper.appendChild(prevButton);
+
+            // Page Numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.className = `px-3 py-1 text-sm rounded-md ${i === currentPage ? 'bg-blue-600 text-white' : 'bg-white/10 hover:bg-white/20'}`;
+                pageButton.onclick = () => onPageClick(i);
+                wrapper.appendChild(pageButton);
+            }
+
+            // Next Button
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'Próximo';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.className = 'px-3 py-1 text-sm rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed';
+            nextButton.onclick = () => onPageClick(currentPage + 1);
+            wrapper.appendChild(nextButton);
+            
+            container.appendChild(wrapper);
+        }
+
     </script>
 </body>
 </html>
+
