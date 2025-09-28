@@ -149,7 +149,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Coluna 1: Metas -->
                 <div class="lg:col-span-2">
-                    <div class="glassmorphism rounded-2xl p-6">
+                    <div class="glassmorphism rounded-2xl p-6 flex flex-col">
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-xl font-bold">Metas Atuais</h2>
                             <button id="add-goal-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">+ Nova Meta</button>
@@ -157,9 +157,10 @@
                         <div id="category-filters" class="flex flex-wrap gap-2 mb-4 pb-4 border-b border-white/10">
                             <!-- Filtros de categoria serão injetados aqui -->
                         </div>
-                        <div id="goals-container" class="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
+                        <div id="goals-container" class="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2 flex-grow">
                            <!-- Metas serão injetadas aqui -->
                         </div>
+                        <div id="goals-pagination" class="mt-6"></div>
                     </div>
                 </div>
 
@@ -210,7 +211,7 @@
                     <!-- Painel de Inspiração -->
                     <div class="glassmorphism rounded-2xl p-6">
                         <h2 class="text-xl font-bold mb-4">Painel de Inspiração</h2>
-                        <div id="images-container" class="grid grid-cols-2 gap-2 h-64 overflow-y-auto custom-scrollbar pr-2">
+                        <div id="images-container" class="grid grid-cols-2 gap-2 max-h-48 sm:max-h-64 overflow-y-auto custom-scrollbar pr-2">
                             <!-- Imagens serão injetadas aqui -->
                         </div>
                         <button id="add-image-button" class="mt-4 w-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Adicionar Imagem</button>
@@ -484,6 +485,7 @@
         
         let allGoalDocs = [];
         let currentCategoryFilter = 'all';
+        let currentGoalsPage = 1;
 
         function getCollectionRef(collectionName) {
             return collection(db, 'artifacts', appId, 'users', userId, collectionName);
@@ -745,6 +747,8 @@
         function renderGoalsAndFilters() {
             const goalsContainer = document.getElementById('goals-container');
             const categoryFiltersContainer = document.getElementById('category-filters');
+            const goalsPaginationContainer = document.getElementById('goals-pagination');
+            const itemsPerPage = 5;
 
             const pendingDocs = allGoalDocs.filter(doc => !doc.data().completed);
             
@@ -758,17 +762,25 @@
             const filteredDocs = currentCategoryFilter === 'all' 
                 ? pendingDocs 
                 : pendingDocs.filter(doc => doc.data().category === currentCategoryFilter);
-
-            let goalsHtml = '';
-            if (filteredDocs.length > 0) {
-                filteredDocs.forEach(doc => goalsHtml += renderGoal(doc.id, doc.data()));
-            } else {
-                 goalsHtml = `<div class="text-center py-8 text-gray-400">
-                        <p>Nenhuma meta pendente encontrada.</p>
-                        <p class="text-sm">${currentCategoryFilter === 'all' ? 'Adicione uma nova meta ou veja suas conquistas no arquivo!' : `Tente selecionar outra categoria.`}</p>
-                    </div>`;
+            
+            const renderPage = (page) => {
+                currentGoalsPage = page;
+                const start = (page - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                const pageItems = filteredDocs.slice(start, end);
+                
+                if (filteredDocs.length === 0) {
+                     goalsContainer.innerHTML = `<div class="text-center py-8 text-gray-400">
+                            <p>Nenhuma meta pendente encontrada.</p>
+                            <p class="text-sm">${currentCategoryFilter === 'all' ? 'Adicione uma nova meta ou veja suas conquistas no arquivo!' : `Tente selecionar outra categoria.`}</p>
+                        </div>`;
+                } else {
+                     goalsContainer.innerHTML = pageItems.map(doc => renderGoal(doc.id, doc.data())).join('');
+                }
+                renderPaginationControls(goalsPaginationContainer, page, filteredDocs.length, itemsPerPage, renderPage);
             }
-            goalsContainer.innerHTML = goalsHtml;
+
+            renderPage(currentGoalsPage);
         }
 
         function attachGoalListeners() {
@@ -787,6 +799,7 @@
                 const button = e.target.closest('button[data-category]');
                 if (button) {
                     currentCategoryFilter = button.dataset.category;
+                    currentGoalsPage = 1; // Reset page on filter change
                     renderGoalsAndFilters();
                 }
             });
@@ -1025,10 +1038,11 @@
                         <p>Você ainda não concluiu nenhuma meta.</p>
                         <p class="text-sm">Continue focado e suas vitórias aparecerão aqui!</p>
                    </div>`;
+                   paginationContainer.innerHTML = '';
                 } else {
                      container.innerHTML = pageItems.map(doc => renderArchivedGoal(doc.id, doc.data())).join('');
+                     renderPaginationControls(paginationContainer, page, completedGoals.length, itemsPerPage, renderPage);
                 }
-                renderPaginationControls(paginationContainer, page, completedGoals.length, itemsPerPage, renderPage);
             };
 
             renderPage(1);
@@ -1235,10 +1249,11 @@
 
                 if (entries.length === 0) {
                      container.innerHTML = '<p class="text-gray-400 text-center pt-10">Nenhuma entrada no diário ainda. Escreva sua primeira reflexão!</p>';
+                     paginationContainer.innerHTML = '';
                 } else {
                      container.innerHTML = pageItems.map(doc => renderJournalEntry(doc.id, doc.data())).join('');
+                     renderPaginationControls(paginationContainer, page, entries.length, itemsPerPage, renderPage);
                 }
-                renderPaginationControls(paginationContainer, page, entries.length, itemsPerPage, renderPage);
             };
 
             renderPage(1);
@@ -1573,11 +1588,13 @@
         }
         
         function renderImage(id, data) {
+            const description = data.description || '';
+            const truncatedDescription = description.length > 50 ? description.substring(0, 50) + '...' : description;
             return `
-                <div class="relative group inspiration-image-wrapper cursor-pointer" data-url="${data.url}" data-description="${data.description || ''}">
-                    <img src="${data.url}" alt="${data.description}" class="w-full h-24 object-cover rounded-lg pointer-events-none">
-                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        <p class="text-white text-xs text-center p-1">${data.description}</p>
+                <div class="relative group inspiration-image-wrapper cursor-pointer" data-url="${data.url}" data-description="${description}">
+                    <img src="${data.url}" alt="${description}" class="w-full h-full object-cover rounded-lg pointer-events-none">
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-end p-2 justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        <p class="text-white text-xs text-center truncate">${truncatedDescription}</p>
                     </div>
                      <button data-id="${id}" data-action="delete-image" class="absolute top-1 right-1 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
@@ -1589,11 +1606,11 @@
         function openImageFocusModal(url, description) {
             const modalHTML = `
                 <div class="relative w-full h-full flex items-center justify-center">
-                    <div class="relative group" id="image-focus-container">
-                        <img src="${url}" alt="${description}" class="block max-w-full max-h-[80vh] object-contain rounded-lg">
+                    <div class="relative group w-full h-full" id="image-focus-container">
+                        <img src="${url}" alt="${description}" class="block w-full h-full object-contain rounded-lg">
                         ${description ? `
-                            <div id="image-focus-description" class="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-70 text-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer lg:opacity-0">
-                                <p>${description}</p>
+                            <div id="image-focus-description" class="absolute inset-0 p-4 flex items-start justify-center bg-black bg-opacity-0 group-hover:bg-opacity-70 transition-all duration-300 text-white opacity-0 group-hover:opacity-100 cursor-pointer lg:opacity-0">
+                                <p class="whitespace-normal break-words max-h-full overflow-y-auto custom-scrollbar">${description}</p>
                             </div>
                         ` : ''}
                     </div>
@@ -1603,7 +1620,7 @@
                 </button>
             `;
 
-            openModal(modalHTML, true, 'max-w-5xl');
+            openModal(modalHTML, true, 'max-w-5xl h-[85vh]');
             
             modalContent.style.padding = '0';
             modalContent.style.background = 'transparent';
@@ -1619,6 +1636,7 @@
                     e.stopPropagation();
                     if (window.innerWidth < 1024) { // Only toggle on tap for mobile/tablet
                         descElement.classList.toggle('opacity-0');
+                        descElement.classList.toggle('bg-opacity-70');
                     }
                 });
             }
@@ -1710,4 +1728,6 @@
     </script>
 </body>
 </html>
+"
+"Crie uma nova função chamada "renderPaginationControls" para gerenciar a exibição dos controles de paginação, esta função será responsável por renderizar dinamicamente os botões de página, incluindo "anterior", "próximo" e números de página com reticências para listas longas, garantindo que a interface permaneça limpa e funcional, e integre essa função nos modais "Diário de Reflexões" e "Arquivo de Conquistas" para que ambos utilizem o novo sistema de paginação, melhorando a navegação e a experiência do usuário ao lidar com um grande número de entradas.
 
