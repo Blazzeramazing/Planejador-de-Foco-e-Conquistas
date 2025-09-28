@@ -122,7 +122,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                     </button>
                     <button id="gamification-button" title="Recompensas" class="ml-2 bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 21h-2v-4h2v4zm4-18h-2v4h2V3zm-4 4h-2v4h2V7zm-4-4h-2v4h2V3zM3 13h4v-2H3v2zm18 0h-4v-2h4v2zM7 17h10v2H7v-2z" /></svg>
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1H9.5a2.5 2.5 0 00-2.312 1.642M12 4.5V3M4.928 4.928l.707.707M18.364 18.364l.707.707M4.928 19.072l.707-.707M18.364 5.636l.707-.707M12 21V3m0 18c-5.028 0-9-4.03-9-9s3.972-9 9-9 9 4.03 9 9-3.972 9-9 9z" /></svg>
                     </button>
                     <button id="archive-button" title="Arquivo de Conquistas" class="ml-2 bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
@@ -596,10 +596,10 @@
         async function openGamificationModal() {
             const userRef = doc(db, 'artifacts', appId, 'users', userId);
             const userDoc = await getDoc(userRef);
-            const gameData = userDoc.exists() ? userDoc.data().gamification : { points: 0, unlockedBadges: [] };
+            const gameData = userDoc.exists() && userDoc.data().gamification ? userDoc.data().gamification : { points: 0, unlockedBadges: [] };
 
             const badgesHtml = Object.entries(allBadges).map(([id, badge]) => {
-                const unlocked = gameData.unlockedBadges.includes(id);
+                const unlocked = gameData.unlockedBadges && gameData.unlockedBadges.includes(id);
                 return `
                     <div class="flex flex-col items-center text-center p-2 glassmorphism rounded-lg ${unlocked ? '' : 'badge-locked'}">
                         <svg class="h-16 w-16 mb-2 ${unlocked ? 'text-yellow-400' : 'text-gray-500'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.333a2 2 0 001.293 1.855l.293.146a2 2 0 011.02 2.667l-.292.585a2 2 0 00.415 2.25l.3.3a2 2 0 010 2.828l-.3.3a2 2 0 00-.415 2.25l.292.585a2 2 0 01-1.02 2.667l-.293.146a2 2 0 00-1.293 1.855V17a1 1 0 11-2 0v-1.333a2 2 0 00-1.293-1.855l-.293-.146a2 2 0 01-1.02-2.667l.292-.585a2 2 0 00-.415-2.25l-.3-.3a2 2 0 010-2.828l.3-.3a2 2 0 00.415-2.25l-.292-.585a2 2 0 011.02-2.667l.293-.146A2 2 0 009 4.333V3a1 1 0 011-1zm0 4a3 3 0 100 6 3 3 0 000-6z" clip-rule="evenodd" /></svg>
@@ -644,6 +644,7 @@
                 </div>
             `;
             openModal(modalHTML, true, 'max-w-4xl');
+            document.getElementById('modal-close-button').onclick = closeModal;
         }
 
         // --- METAS (GOALS) ---
@@ -843,7 +844,12 @@
         
         function openGoalModal(id = null, data = {}) {
             const modalHTML = `
-                <h3 class="text-2xl font-bold mb-6">${id ? 'Editar Meta' : 'Nova Meta'}</h3>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">${id ? 'Editar Meta' : 'Nova Meta'}</h3>
+                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
                 <form id="goal-form">
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-300 mb-1">Título</label>
@@ -872,7 +878,7 @@
                 </form>
             `;
             openModal(modalHTML);
-            
+            document.getElementById('modal-close-button').onclick = closeModal;
             document.getElementById('cancel-goal').onclick = closeModal;
             document.getElementById('goal-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -917,6 +923,7 @@
                 </div>
             `;
             openModal(modalHTML, true, 'max-w-3xl');
+            document.getElementById('modal-close-button').onclick = closeModal;
 
             document.getElementById('archive-container').addEventListener('click', e => {
                 const button = e.target.closest('button');
@@ -1019,6 +1026,7 @@
                 </div>
             `;
             openModal(modalHTML, true, 'max-w-4xl');
+            document.getElementById('modal-close-button').onclick = closeModal;
 
             // Render Charts
             new Chart(document.getElementById('completion-chart'), {
@@ -1103,6 +1111,7 @@
             let unsubscribe = null;
             const handleClose = () => { if (unsubscribe) unsubscribe(); };
             openModal(modalHTML, true, 'max-w-3xl', handleClose);
+            document.getElementById('modal-close-button').onclick = closeModal;
             
             const journalForm = document.getElementById('journal-form');
             const entriesContainer = document.getElementById('journal-entries-container');
@@ -1378,20 +1387,26 @@
         
         function openBookModal() {
             const modalHTML = `
-                <h3 class="text-2xl font-bold mb-6">Adicionar Livro</h3>
+                 <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">Adicionar Livro</h3>
+                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
                 <form id="book-form">
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-300 mb-1">Título do Livro</label>
                         <input type="text" id="book-title" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" required>
                     </div>
                     <div class="flex justify-end gap-4">
-                        <button type="button" id="modal-close-button-custom" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                        <button type="button" id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Adicionar</button>
                     </div>
                 </form>
             `;
             openModal(modalHTML);
-            document.getElementById('modal-close-button-custom').onclick = closeModal;
+            document.getElementById('modal-close-button').onclick = closeModal;
+            document.getElementById('modal-cancel-button').onclick = closeModal;
             document.getElementById('book-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 await addDoc(getCollectionRef('books'), { title: document.getElementById('book-title').value, page: 0 });
@@ -1437,7 +1452,12 @@
         
         function openImageModal() {
              const modalHTML = `
-                <h3 class="text-2xl font-bold mb-6">Adicionar Imagem</h3>
+                 <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">Adicionar Imagem</h3>
+                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
                 <form id="image-form">
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-300 mb-1">URL da Imagem</label>
@@ -1448,13 +1468,14 @@
                         <input type="text" id="image-description" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
                     </div>
                     <div class="flex justify-end gap-4">
-                        <button type="button" id="modal-close-button-custom" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                        <button type="button" id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Adicionar</button>
                     </div>
                 </form>
             `;
             openModal(modalHTML);
-            document.getElementById('modal-close-button-custom').onclick = closeModal;
+            document.getElementById('modal-close-button').onclick = closeModal;
+            document.getElementById('modal-cancel-button').onclick = closeModal;
             document.getElementById('image-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 await addDoc(getCollectionRef('images'), { 
@@ -1498,6 +1519,7 @@
                 </form>
             `;
             openModal(modalHTML);
+            document.getElementById('modal-close-button').onclick = closeModal;
             document.getElementById('modal-cancel-button').onclick = closeModal;
             document.getElementById('settings-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
