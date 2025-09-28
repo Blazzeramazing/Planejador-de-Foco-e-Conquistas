@@ -114,7 +114,9 @@
         <div class="min-h-screen p-4 sm:p-6 md:p-8 bg-black bg-opacity-50">
             <header class="flex justify-between items-center mb-6">
                 <h1 id="main-title" class="text-2xl sm:text-3xl font-bold">Meu Planejador de Foco</h1>
-                <div>
+                
+                <!-- Menu Desktop -->
+                <div class="hidden lg:flex items-center">
                     <button id="journal-button" title="Diário de Reflexões" class="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                     </button>
@@ -122,7 +124,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                     </button>
                     <button id="gamification-button" title="Recompensas" class="ml-2 bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1H9.5a2.5 2.5 0 00-2.312 1.642M12 4.5V3M4.928 4.928l.707.707M18.364 18.364l.707.707M4.928 19.072l.707-.707M18.364 5.636l.707-.707M12 21V3m0 18c-5.028 0-9-4.03-9-9s3.972-9 9-9 9 4.03 9 9-3.972 9-9 9z" /></svg>
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.539 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.539-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
                     </button>
                     <button id="archive-button" title="Arquivo de Conquistas" class="ml-2 bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
@@ -131,6 +133,15 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
                     <button id="logout-button" class="ml-2 bg-red-500 bg-opacity-80 hover:bg-opacity-100 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Sair</button>
+                </div>
+
+                <!-- Botão do Menu Mobile -->
+                <div class="lg:hidden">
+                    <button id="hamburger-button" class="p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
                 </div>
             </header>
 
@@ -209,6 +220,22 @@
         </div>
     </main>
     
+    <!-- Menu Mobile -->
+    <div id="mobile-menu-overlay" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden"></div>
+    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-72 bg-gray-800 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-xl font-bold">Menu</h2>
+                <button id="close-menu-button" class="p-1 rounded-full hover:bg-white/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <nav id="mobile-nav" class="flex flex-col space-y-2">
+                <!-- Links do menu mobile serão injetados aqui -->
+            </nav>
+        </div>
+    </div>
+
     <!-- Modal Genérico -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
         <div id="modal-content" class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
@@ -283,6 +310,11 @@
         const statsButton = document.getElementById('stats-button');
         const journalButton = document.getElementById('journal-button');
         const gamificationButton = document.getElementById('gamification-button');
+
+        const hamburgerButton = document.getElementById('hamburger-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+        const closeMenuButton = document.getElementById('close-menu-button');
         
         const modal = document.getElementById('modal');
         const modalContent = document.getElementById('modal-content');
@@ -493,6 +525,7 @@
             attachBookListeners();
             attachImageListeners();
             attachPomodoroListeners();
+            attachMenuListeners();
             settingsButton.onclick = openSettingsModal;
             archiveButton.onclick = openArchiveModal;
             statsButton.onclick = openStatsModal;
@@ -521,6 +554,66 @@
                 tagBg: `bg-${color.name}-500/50`,
                 tagText: `text-${color.name}-200`,
             }
+        }
+
+        // --- Lógica do Menu Mobile ---
+        function openMobileMenu() {
+            mobileMenu.classList.remove('translate-x-full');
+            mobileMenuOverlay.classList.remove('hidden');
+        }
+
+        function closeMobileMenu() {
+            mobileMenu.classList.add('translate-x-full');
+            mobileMenuOverlay.classList.add('hidden');
+        }
+
+        function populateMobileMenu() {
+            const nav = document.getElementById('mobile-nav');
+            nav.innerHTML = ''; // Limpa itens anteriores
+
+            const menuItems = [
+                { originalButton: journalButton, text: 'Diário de Reflexões' },
+                { originalButton: statsButton, text: 'Estatísticas' },
+                { originalButton: gamificationButton, text: 'Recompensas' },
+                { originalButton: archiveButton, text: 'Arquivo' },
+                { originalButton: settingsButton, text: 'Configurações' },
+            ];
+
+            menuItems.forEach(item => {
+                const button = document.createElement('button');
+                button.className = 'flex items-center w-full text-left p-3 rounded-lg hover:bg-white/10 transition-colors';
+                button.innerHTML = `
+                    <div class="w-8 h-6 mr-3 flex-shrink-0">${item.originalButton.innerHTML}</div>
+                    <span>${item.text}</span>
+                `;
+                button.onclick = () => {
+                    closeMobileMenu();
+                    item.originalButton.click(); // Dispara o evento de clique do botão original
+                };
+                nav.appendChild(button);
+            });
+
+            // Adiciona o botão de sair separadamente
+            const logoutMobileButton = document.createElement('button');
+            logoutMobileButton.className = 'flex items-center w-full text-left p-3 mt-4 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/40 transition-colors';
+            logoutMobileButton.innerHTML = `
+                <div class="w-8 h-6 mr-3 flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                </div>
+                <span>Sair</span>
+            `;
+            logoutMobileButton.onclick = () => {
+                closeMobileMenu();
+                logoutButton.click();
+            };
+            nav.appendChild(logoutMobileButton);
+        }
+
+        function attachMenuListeners() {
+            hamburgerButton.onclick = openMobileMenu;
+            closeMenuButton.onclick = closeMobileMenu;
+            mobileMenuOverlay.onclick = closeMobileMenu;
+            populateMobileMenu();
         }
         
         // --- GAMIFICATION ---
