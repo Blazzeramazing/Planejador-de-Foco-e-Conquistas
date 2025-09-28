@@ -1521,26 +1521,72 @@
              document.getElementById('add-image-button').onclick = () => openImageModal();
              
              imagesContainer.addEventListener('click', e => {
-                 const target = e.target.closest('button');
-                 if(!target || target.dataset.action !== 'delete-image') return;
-                 openConfirmModal('Confirmar Exclusão', 'Apagar esta imagem do painel?', () => {
-                    deleteDoc(getDocRef('images', target.dataset.id));
-                 });
+                 const deleteButton = e.target.closest('button[data-action="delete-image"]');
+                 if(deleteButton) {
+                     e.stopPropagation(); // Prevent image modal from opening
+                     openConfirmModal('Confirmar Exclusão', 'Apagar esta imagem do painel?', () => {
+                        deleteDoc(getDocRef('images', deleteButton.dataset.id));
+                     });
+                     return;
+                 }
+
+                 const imageWrapper = e.target.closest('.inspiration-image-wrapper');
+                 if (imageWrapper) {
+                     openImageFocusModal(imageWrapper.dataset.url, imageWrapper.dataset.description);
+                 }
              });
         }
         
         function renderImage(id, data) {
             return `
-                <div class="relative group">
-                    <img src="${data.url}" alt="${data.description}" class="w-full h-24 object-cover rounded-lg">
-                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div class="relative group inspiration-image-wrapper cursor-pointer" data-url="${data.url}" data-description="${data.description || ''}">
+                    <img src="${data.url}" alt="${data.description}" class="w-full h-24 object-cover rounded-lg pointer-events-none">
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                         <p class="text-white text-xs text-center p-1">${data.description}</p>
                     </div>
-                     <button data-id="${id}" data-action="delete-image" class="absolute top-1 right-1 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                     <button data-id="${id}" data-action="delete-image" class="absolute top-1 right-1 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                      </button>
                 </div>
             `;
+        }
+
+        function openImageFocusModal(url, description) {
+            const modalHTML = `
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <div class="relative group" id="image-focus-container">
+                        <img src="${url}" alt="${description}" class="block max-w-full max-h-[80vh] object-contain rounded-lg">
+                        ${description ? `
+                            <div id="image-focus-description" class="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-70 text-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                <p>${description}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <button id="modal-close-button-focus" class="absolute top-2 right-2 p-1 rounded-full bg-black/50 hover:bg-black/70 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            `;
+
+            openModal(modalHTML, true, 'max-w-5xl');
+            
+            modalContent.style.padding = '0';
+            modalContent.style.background = 'transparent';
+            modalContent.style.border = 'none';
+
+            document.getElementById('modal-close-button-focus').onclick = closeModal;
+
+            if (description) {
+                const container = document.getElementById('image-focus-container');
+                const descElement = document.getElementById('image-focus-description');
+                
+                container.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (window.innerWidth < 1024) {
+                        descElement.classList.toggle('opacity-0');
+                    }
+                });
+            }
         }
         
         function openImageModal() {
