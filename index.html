@@ -210,7 +210,7 @@
                     <!-- Painel de Inspiração -->
                     <div class="glassmorphism rounded-2xl p-6">
                         <h2 class="text-xl font-bold mb-4">Painel de Inspiração</h2>
-                        <div id="images-container" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                        <div id="images-container" class="grid grid-cols-2 gap-2 h-64 overflow-y-auto custom-scrollbar pr-2">
                             <!-- Imagens serão injetadas aqui -->
                         </div>
                         <button id="add-image-button" class="mt-4 w-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Adicionar Imagem</button>
@@ -274,7 +274,8 @@
             deleteDoc,
             query,
             where,
-            orderBy
+            orderBy,
+            getDocs
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Configuração do Firebase ---
@@ -994,15 +995,10 @@
             });
         }
         
-        function openArchiveModal() {
-            const completedGoals = allGoalDocs.filter(doc => doc.data().completed);
-
-            let archiveHtml = completedGoals.length > 0 
-                ? completedGoals.map(doc => renderArchivedGoal(doc.id, doc.data())).join('')
-                : `<div class="text-center py-8 text-gray-400">
-                        <p>Você ainda não concluiu nenhuma meta.</p>
-                        <p class="text-sm">Continue focado e suas vitórias aparecerão aqui!</p>
-                   </div>`;
+        async function openArchiveModal() {
+            const completedGoalsSnapshot = await getDocs(query(getCollectionRef('goals'), where('completed', '==', true)));
+            const completedGoals = completedGoalsSnapshot.docs;
+            const itemsPerPage = 5;
             
             const modalHTML = `
                 <div class="flex justify-between items-center mb-6">
@@ -1011,12 +1007,31 @@
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
-                <div id="archive-container" class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
-                    ${archiveHtml}
-                </div>
+                <div id="archive-container" class="space-y-4 min-h-[20rem]"></div>
+                <div id="archive-pagination" class="mt-6"></div>
             `;
             openModal(modalHTML, true, 'max-w-3xl');
             document.getElementById('modal-close-button').onclick = closeModal;
+            
+            const renderPage = (page) => {
+                const container = document.getElementById('archive-container');
+                const paginationContainer = document.getElementById('archive-pagination');
+                const start = (page - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                const pageItems = completedGoals.slice(start, end);
+
+                if (completedGoals.length === 0) {
+                     container.innerHTML = `<div class="text-center py-8 text-gray-400">
+                        <p>Você ainda não concluiu nenhuma meta.</p>
+                        <p class="text-sm">Continue focado e suas vitórias aparecerão aqui!</p>
+                   </div>`;
+                } else {
+                     container.innerHTML = pageItems.map(doc => renderArchivedGoal(doc.id, doc.data())).join('');
+                }
+                renderPaginationControls(paginationContainer, page, completedGoals.length, itemsPerPage, renderPage);
+            };
+
+            renderPage(1);
 
             document.getElementById('archive-container').addEventListener('click', e => {
                 const button = e.target.closest('button');
@@ -1027,11 +1042,13 @@
                 if (button.dataset.action === 'restore') {
                     updateDoc(getDocRef('goals', goalId), { completed: false, completedAt: null });
                     showToast('Meta restaurada para a lista principal!', 'info');
+                    closeModal(); // Recarrega a lista principal
                 }
 
                 if (button.dataset.action === 'delete-permanent') {
                      openConfirmModal('Exclusão Permanente', 'Esta ação é irreversível. Deseja apagar permanentemente esta conquista?', () => {
                         deleteDoc(getDocRef('goals', goalId));
+                        closeModal(); // Recarrega a lista principal
                     });
                 }
             });
@@ -1182,7 +1199,7 @@
             `;
         }
         
-        function openJournalModal() {
+        async function openJournalModal() {
             const modalHTML = `
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-2xl font-bold">Diário de Reflexões</h3>
@@ -1196,19 +1213,37 @@
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Salvar Entrada</button>
                     </div>
                 </form>
-                <div id="journal-entries-container" class="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
-                    <p class="text-gray-400 text-center">Carregando entradas...</p>
-                </div>
+                <div id="journal-entries-container" class="space-y-4 min-h-[15rem]"></div>
+                <div id="journal-pagination" class="mt-6"></div>
             `;
             
-            let unsubscribe = null;
-            const handleClose = () => { if (unsubscribe) unsubscribe(); };
-            openModal(modalHTML, true, 'max-w-3xl', handleClose);
+            openModal(modalHTML, true, 'max-w-3xl');
             document.getElementById('modal-close-button').onclick = closeModal;
+
+            const journalCollection = getCollectionRef('journal');
+            const q = query(journalCollection, orderBy("createdAt", "desc"));
+            const snapshot = await getDocs(q);
+            const entries = snapshot.docs;
+            const itemsPerPage = 3;
+
+            const renderPage = (page) => {
+                const container = document.getElementById('journal-entries-container');
+                const paginationContainer = document.getElementById('journal-pagination');
+                const start = (page - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                const pageItems = entries.slice(start, end);
+
+                if (entries.length === 0) {
+                     container.innerHTML = '<p class="text-gray-400 text-center pt-10">Nenhuma entrada no diário ainda. Escreva sua primeira reflexão!</p>';
+                } else {
+                     container.innerHTML = pageItems.map(doc => renderJournalEntry(doc.id, doc.data())).join('');
+                }
+                renderPaginationControls(paginationContainer, page, entries.length, itemsPerPage, renderPage);
+            };
+
+            renderPage(1);
             
             const journalForm = document.getElementById('journal-form');
-            const entriesContainer = document.getElementById('journal-entries-container');
-            
             journalForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const textarea = document.getElementById('journal-text');
@@ -1217,19 +1252,12 @@
                     await addDoc(getCollectionRef('journal'), { text: text, createdAt: new Date().toISOString() });
                     textarea.value = '';
                     showToast('Entrada salva!', 'success');
+                    closeModal();
+                    openJournalModal(); // Re-open to refresh with new data and pagination
                 }
             });
 
-            const q = query(getCollectionRef('journal'), orderBy("createdAt", "desc"));
-            unsubscribe = onSnapshot(q, (snapshot) => {
-                if (snapshot.empty) {
-                    entriesContainer.innerHTML = '<p class="text-gray-400 text-center">Nenhuma entrada no diário ainda. Escreva sua primeira reflexão!</p>';
-                    return;
-                }
-                entriesContainer.innerHTML = snapshot.docs.map(doc => renderJournalEntry(doc.id, doc.data())).join('');
-            });
-
-            entriesContainer.addEventListener('click', e => {
+            document.getElementById('journal-entries-container').addEventListener('click', e => {
                 const button = e.target.closest('button');
                 if (!button || !button.dataset.id) return;
                 
@@ -1239,7 +1267,10 @@
 
                 if (action === 'delete') {
                     openConfirmModal('Excluir Entrada', 'Tem certeza que deseja apagar esta entrada do diário?', () => {
-                        deleteDoc(getDocRef('journal', entryId));
+                        deleteDoc(getDocRef('journal', entryId)).then(() => {
+                           closeModal();
+                           openJournalModal();
+                        });
                     });
                 }
 
@@ -1263,7 +1294,11 @@
                     const newText = contentDiv.querySelector('textarea').value.trim();
                     if (newText) {
                         updateDoc(getDocRef('journal', entryId), { text: newText })
-                            .then(() => showToast('Entrada atualizada!', 'success'));
+                            .then(() => {
+                                showToast('Entrada atualizada!', 'success');
+                                closeModal();
+                                openJournalModal();
+                            });
                     }
                 }
             });
@@ -1557,7 +1592,7 @@
                     <div class="relative group" id="image-focus-container">
                         <img src="${url}" alt="${description}" class="block max-w-full max-h-[80vh] object-contain rounded-lg">
                         ${description ? `
-                            <div id="image-focus-description" class="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-70 text-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                            <div id="image-focus-description" class="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-70 text-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer lg:opacity-0">
                                 <p>${description}</p>
                             </div>
                         ` : ''}
@@ -1582,7 +1617,7 @@
                 
                 container.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (window.innerWidth < 1024) {
+                    if (window.innerWidth < 1024) { // Only toggle on tap for mobile/tablet
                         descElement.classList.toggle('opacity-0');
                     }
                 });
