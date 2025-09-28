@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planejador de Foco e Conquistas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Carrega a configuração do Firebase antes de qualquer outro script -->
+    <script src="firebase-config.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .main-bg {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        .badge-locked {
+            filter: grayscale(100%);
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white transition-all duration-500">
+
+    <!-- Seção de Autenticação -->
+    <div id="auth-section" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-blue-900 p-4">
+        <div class="w-full max-w-md">
+            <!-- Formulário de Login -->
+            <div id="login-form-container" class="bg-gray-800 p-8 rounded-2xl shadow-2xl">
+                <h2 class="text-3xl font-bold text-center mb-2">Bem-vindo(a) de volta!</h2>
+                <p class="text-center text-gray-400 mb-6">Acesse seu plano de conquistas.</p>
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label for="login-email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                        <input type="email" id="login-email" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="login-password" class="block text-sm font-medium text-gray-300 mb-1">Senha</label>
+                        <input type="password" id="login-password" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Entrar</button>
+                </form>
+                <div class="text-center mt-4">
+                    <a href="#" id="show-register" class="text-sm text-blue-400 hover:underline">Não tem uma conta? Cadastre-se</a>
+                    <span class="mx-2 text-gray-500">|</span>
+                    <a href="#" id="show-reset" class="text-sm text-blue-400 hover:underline">Esqueceu a senha?</a>
+                </div>
+            </div>
+
+            <!-- Formulário de Cadastro -->
+            <div id="register-form-container" class="hidden bg-gray-800 p-8 rounded-2xl shadow-2xl">
+                <h2 class="text-3xl font-bold text-center mb-6">Crie Sua Conta</h2>
+                <form id="register-form">
+                    <div class="mb-4">
+                        <label for="register-email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                        <input type="email" id="register-email" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="register-password" class="block text-sm font-medium text-gray-300 mb-1">Senha (mínimo 6 caracteres)</label>
+                        <input type="password" id="register-password" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cadastrar</button>
+                </form>
+                <div class="text-center mt-4">
+                    <a href="#" id="show-login" class="text-sm text-blue-400 hover:underline">Já tem uma conta? Faça login</a>
+                </div>
+            </div>
+
+            <!-- Recuperação de Senha -->
+            <div id="reset-form-container" class="hidden bg-gray-800 p-8 rounded-2xl shadow-2xl">
+                <h2 class="text-3xl font-bold text-center mb-6">Recuperar Senha</h2>
+                <form id="reset-form">
+                    <div class="mb-4">
+                        <label for="reset-email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                        <input type="email" id="reset-email" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Enviar email de recuperação</button>
+                </form>
+                <div class="text-center mt-4">
+                    <a href="#" id="back-to-login" class="text-sm text-blue-400 hover:underline">Voltar para o Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção Principal da Aplicação -->
+    <main id="app-section" class="hidden min-h-screen main-bg">
+        <div class="min-h-screen p-4 sm:p-6 md:p-8 bg-black bg-opacity-50">
+            <header class="flex justify-between items-center mb-6">
+                <h1 id="main-title" class="text-2xl sm:text-3xl font-bold">Meu Planejador de Foco</h1>
+                <div>
+                    <button id="journal-button" title="Diário de Reflexões" class="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    </button>
+                    <button id="stats-button" title="Estatísticas de Progresso" class="ml-2 bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    </button>
+                    <button id="gamification-button" title="Recompensas" class="ml-2 bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 21h-2v-4h2v4zm4-18h-2v4h2V3zm-4 4h-2v4h2V7zm-4-4h-2v4h2V3zM3 13h4v-2H3v2zm18 0h-4v-2h4v2zM7 17h10v2H7v-2z" /></svg>
+                    </button>
+                    <button id="archive-button" title="Arquivo de Conquistas" class="ml-2 bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                    </button>
+                    <button id="settings-button" class="ml-2 bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-full transition-colors focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+                    <button id="logout-button" class="ml-2 bg-red-500 bg-opacity-80 hover:bg-opacity-100 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Sair</button>
+                </div>
+            </header>
+
+            <!-- Grid principal -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Coluna 1: Metas -->
+                <div class="lg:col-span-2">
+                    <div class="glassmorphism rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Metas Atuais</h2>
+                            <button id="add-goal-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">+ Nova Meta</button>
+                        </div>
+                        <div id="category-filters" class="flex flex-wrap gap-2 mb-4 pb-4 border-b border-white/10">
+                            <!-- Filtros de categoria serão injetados aqui -->
+                        </div>
+                        <div id="goals-container" class="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
+                           <!-- Metas serão injetadas aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna 2: Ferramentas -->
+                <div class="space-y-6">
+                    <!-- Pomodoro Timer -->
+                    <div class="glassmorphism rounded-2xl p-6">
+                        <h2 class="text-xl font-bold mb-4">Foco Pomodoro</h2>
+                        <div class="text-center">
+                            <div id="pomodoro-modes" class="flex justify-center gap-2 mb-4">
+                                <button id="mode-focus" data-mode="focus" class="px-3 py-1 text-sm rounded-full bg-blue-600 text-white">Foco</button>
+                                <button id="mode-short-break" data-mode="shortBreak" class="px-3 py-1 text-sm rounded-full bg-white/10 hover:bg-white/20">Pausa Curta</button>
+                                <button id="mode-long-break" data-mode="longBreak" class="px-3 py-1 text-sm rounded-full bg-white/10 hover:bg-white/20">Pausa Longa</button>
+                            </div>
+                            <p id="pomodoro-time" class="text-6xl font-mono font-bold my-4">25:00</p>
+                            <div id="pomodoro-controls" class="flex justify-center gap-4">
+                                <button id="pomodoro-start-pause" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors w-32">Iniciar</button>
+                                <button id="pomodoro-reset" class="bg-red-600 hover:bg-red-700 text-white font-bold p-2 rounded-lg transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 4l16 16" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Afazeres -->
+                    <div class="glassmorphism rounded-2xl p-6">
+                        <h2 class="text-xl font-bold mb-4">Lista de Afazeres Rápidos</h2>
+                        <form id="todo-form" class="flex gap-2 mb-4">
+                            <input type="text" id="todo-input" placeholder="Nova tarefa..." class="flex-grow bg-white bg-opacity-20 border-none rounded-lg px-3 py-2 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold p-2 rounded-lg transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </form>
+                        <ul id="todo-list" class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                            <!-- Tarefas serão injetadas aqui -->
+                        </ul>
+                    </div>
+                    
+                    <!-- Leitura Atual -->
+                    <div class="glassmorphism rounded-2xl p-6">
+                        <h2 class="text-xl font-bold mb-4">Progresso de Leitura</h2>
+                        <div id="books-container" class="space-y-3">
+                             <!-- Livros serão injetados aqui -->
+                        </div>
+                         <button id="add-book-button" class="mt-4 w-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Adicionar Livro</button>
+                    </div>
+
+                    <!-- Painel de Inspiração -->
+                    <div class="glassmorphism rounded-2xl p-6">
+                        <h2 class="text-xl font-bold mb-4">Painel de Inspiração</h2>
+                        <div id="images-container" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                            <!-- Imagens serão injetadas aqui -->
+                        </div>
+                        <button id="add-image-button" class="mt-4 w-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Adicionar Imagem</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modal Genérico -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden z-50">
+        <div id="modal-content" class="bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
+            <!-- Conteúdo do modal será injetado aqui -->
+        </div>
+    </div>
+    
+     <!-- Toast de Notificação -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-5 rounded-lg shadow-lg opacity-0 translate-y-10 transition-all duration-300">
+        <p id="toast-message"></p>
+    </div>
+
+
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            sendPasswordResetEmail,
+            signInWithCustomToken,
+            signInAnonymously
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            collection, 
+            addDoc, 
+            onSnapshot,
+            updateDoc,
+            deleteDoc,
+            query,
+            where,
+            orderBy
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Configuração do Firebase ---
+        // A configuração agora é lida do 'firebase-config.js' que foi importado no HTML
+        const app = initializeApp(window.firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        let userId;
+        const appId = 'default-app-id'; // Em um ambiente real, este ID seria dinâmico.
+
+        // --- Estado da Aplicação e Seletores de DOM ---
+        const authSection = document.getElementById('auth-section');
+        const appSection = document.getElementById('app-section');
+        const mainTitle = document.getElementById('main-title');
+        
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const resetForm = document.getElementById('reset-form');
+
+        const loginContainer = document.getElementById('login-form-container');
+        const registerContainer = document.getElementById('register-form-container');
+        const resetContainer = document.getElementById('reset-form-container');
+
+        const showRegister = document.getElementById('show-register');
+        const showLogin = document.getElementById('show-login');
+        const showReset = document.getElementById('show-reset');
+        const backToLogin = document.getElementById('back-to-login');
+        
+        const logoutButton = document.getElementById('logout-button');
+        const settingsButton = document.getElementById('settings-button');
+        const archiveButton = document.getElementById('archive-button');
+        const statsButton = document.getElementById('stats-button');
+        const journalButton = document.getElementById('journal-button');
+        const gamificationButton = document.getElementById('gamification-button');
+        
+        const modal = document.getElementById('modal');
+        const modalContent = document.getElementById('modal-content');
+        
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+
+        let currentModalCloseHandler = null;
+
+        // --- Funções de Notificação (Toast) ---
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            toast.className = 'fixed bottom-5 right-5 text-white py-2 px-5 rounded-lg shadow-lg transition-all duration-300'; // Reset classes
+            if (type === 'success') {
+                toast.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-500');
+            } else {
+                toast.classList.add('bg-blue-500');
+            }
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+            }, 3000);
+        }
+
+        // --- Funções do Modal ---
+        function openModal(content, closeOnClickOutside = true, maxWidth = 'max-w-lg', onClose = null) {
+            currentModalCloseHandler = onClose;
+            modalContent.className = `bg-gray-800 rounded-2xl shadow-2xl w-full p-8 relative ${maxWidth}`;
+            modalContent.innerHTML = content;
+            modal.classList.remove('hidden');
+
+            const closeModalHandler = (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                    modal.removeEventListener('click', closeModalHandler);
+                }
+            };
+
+            if (closeOnClickOutside) {
+                modal.addEventListener('click', closeModalHandler);
+            }
+        }
+
+        function closeModal() {
+            if (currentModalCloseHandler) {
+                currentModalCloseHandler();
+                currentModalCloseHandler = null;
+            }
+            modal.classList.add('hidden');
+            modalContent.innerHTML = '';
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            const modalHTML = `
+                <h3 class="text-2xl font-bold mb-4">${title}</h3>
+                <p class="text-gray-300 mb-8">${message}</p>
+                <div class="flex justify-end gap-4">
+                    <button id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                    <button id="modal-confirm-button" class="bg-red-600 hover:bg-red-700 font-bold py-2 px-4 rounded-lg">Confirmar</button>
+                </div>
+            `;
+            openModal(modalHTML, false);
+
+            document.getElementById('modal-cancel-button').onclick = closeModal;
+            document.getElementById('modal-confirm-button').onclick = () => {
+                onConfirm();
+                closeModal();
+            };
+        }
+
+        // --- Lógica de Autenticação ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                authSection.classList.add('hidden');
+                appSection.classList.remove('hidden');
+                loadUserSettings();
+                attachAppListeners();
+            } else {
+                userId = null;
+                authSection.classList.remove('hidden');
+                appSection.classList.add('hidden');
+            }
+        });
+        
+        async function initialAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    // Para o ambiente local, você pode querer fazer login anônimo ou ter uma tela de login/senha
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Authentication Error:", error);
+                showToast("Erro na autenticação.", "error");
+            }
+        }
+        initialAuth();
+
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = loginForm['login-email'].value;
+            const password = loginForm['login-password'].value;
+            signInWithEmailAndPassword(auth, email, password)
+                .catch(error => showToast(`Erro no login: ${error.message}`, 'error'));
+        });
+
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = registerForm['register-email'].value;
+            const password = registerForm['register-password'].value;
+            createUserWithEmailAndPassword(auth, email, password)
+                .then(async (userCredential) => {
+                    // Inicializa os dados de gamificação para o novo usuário
+                    const userRef = doc(db, 'artifacts', appId, 'users', userCredential.user.uid);
+                    await setDoc(userRef, {
+                        gamification: {
+                            points: 0,
+                            goalsCompleted: 0,
+                            pomodoroCycles: 0,
+                            todosCompleted: 0,
+                            unlockedBadges: [],
+                            lastLogin: new Date().toISOString().split('T')[0],
+                            streak: 1
+                        }
+                    }, { merge: true });
+                    showToast('Conta criada com sucesso!', 'success');
+                })
+                .catch(error => showToast(`Erro no cadastro: ${error.message}`, 'error'));
+        });
+
+        resetForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = resetForm['reset-email'].value;
+            sendPasswordResetEmail(auth, email)
+                .then(() => {
+                    showToast('Email de recuperação enviado!', 'info');
+                    toggleAuthForms('login');
+                })
+                .catch(error => showToast(`Erro: ${error.message}`, 'error'));
+        });
+
+        logoutButton.addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        function toggleAuthForms(form) {
+            loginContainer.classList.add('hidden');
+            registerContainer.classList.add('hidden');
+            resetContainer.classList.add('hidden');
+            if (form === 'login') loginContainer.classList.remove('hidden');
+            if (form === 'register') registerContainer.classList.remove('hidden');
+            if (form === 'reset') resetContainer.classList.remove('hidden');
+        }
+        showRegister.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('register'); });
+        showLogin.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('login'); });
+        showReset.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('reset'); });
+        backToLogin.addEventListener('click', (e) => { e.preventDefault(); toggleAuthForms('login'); });
+
+
+        // --- Lógica Principal da Aplicação ---
+        
+        let allGoalDocs = [];
+        let currentCategoryFilter = 'all';
+
+        function getCollectionRef(collectionName) {
+            return collection(db, 'artifacts', appId, 'users', userId, collectionName);
+        }
+        
+        function getDocRef(collectionName, docId) {
+             return doc(db, 'artifacts', appId, 'users', userId, collectionName, docId);
+        }
+
+        async function loadUserSettings() {
+            if (!userId) return;
+            const settingsRef = doc(db, 'artifacts', appId, 'users', userId);
+            onSnapshot(settingsRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const settings = docSnap.data();
+                    if (settings.backgroundImage) {
+                        document.querySelector('.main-bg').style.backgroundImage = `url(${settings.backgroundImage})`;
+                    } else {
+                        document.querySelector('.main-bg').style.backgroundImage = 'none';
+                        document.querySelector('.main-bg').style.backgroundColor = '#111827';
+                    }
+                    if (settings.textColor) {
+                       document.documentElement.style.setProperty('--user-text-color', settings.textColor);
+                       mainTitle.style.color = settings.textColor;
+                    }
+                    if (settings.cardColor) {
+                        const glassmorphismElements = document.querySelectorAll('.glassmorphism');
+                        glassmorphismElements.forEach(el => {
+                            const [r, g, b] = settings.cardColor.match(/\w\w/g).map((x) => parseInt(x, 16));
+                            el.style.background = `rgba(${r}, ${g}, ${b}, 0.1)`;
+                        });
+                    }
+                }
+            });
+        }
+        
+        function attachAppListeners() {
+            attachGoalListeners();
+            attachTodoListeners();
+            attachBookListeners();
+            attachImageListeners();
+            attachPomodoroListeners();
+            settingsButton.onclick = openSettingsModal;
+            archiveButton.onclick = openArchiveModal;
+            statsButton.onclick = openStatsModal;
+            journalButton.onclick = openJournalModal;
+            gamificationButton.onclick = openGamificationModal;
+            updateLoginStreak();
+        }
+
+        function categoryToColor(category) {
+            if (!category) return { bg: 'rgba(107, 114, 128, 0.5)', border: 'rgb(107, 114, 128)', tagBg: 'bg-gray-500/50', tagText: 'text-gray-200' };
+            let hash = 0;
+            for (let i = 0; i < category.length; i++) {
+                hash = category.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const colors = [
+                { name: 'pink', bg: 'rgba(236, 72, 153, 0.5)', border: 'rgb(236, 72, 153)' }, // Pink
+                { name: 'indigo', bg: 'rgba(99, 102, 241, 0.5)', border: 'rgb(99, 102, 241)' }, // Indigo
+                { name: 'teal', bg: 'rgba(20, 184, 166, 0.5)', border: 'rgb(20, 184, 166)' }, // Teal
+                { name: 'amber', bg: 'rgba(245, 158, 11, 0.5)', border: 'rgb(245, 158, 11)' }, // Amber
+                { name: 'purple', bg: 'rgba(168, 85, 247, 0.5)', border: 'rgb(168, 85, 247)' }, // Purple
+                { name: 'green', bg: 'rgba(34, 197, 94, 0.5)', border: 'rgb(34, 197, 94)' },  // Green
+            ];
+            const color = colors[Math.abs(hash % colors.length)];
+            return {
+                ...color,
+                tagBg: `bg-${color.name}-500/50`,
+                tagText: `text-${color.name}-200`,
+            }
+        }
+        
+        // --- GAMIFICATION ---
+        
+        const allBadges = {
+            goal_1: { title: "Primeiro Passo", description: "Complete sua primeira meta." },
+            goal_10: { title: "Conquistador", description: "Complete 10 metas." },
+            pomodoro_1: { title: "Foco Iniciado", description: "Complete 1 ciclo Pomodoro." },
+            pomodoro_25: { title: "Mestre do Foco", description: "Complete 25 ciclos Pomodoro." },
+            todo_10: { title: "Organizado", description: "Complete 10 tarefas rápidas." },
+            streak_3: { title: "Sempre em Frente", description: "Acesse o app por 3 dias seguidos." },
+            streak_7: { title: "Imparável", description: "Acesse o app por 7 dias seguidos." },
+        };
+
+        async function updateGamification(updates) {
+            if (!userId) return;
+            const userRef = doc(db, 'artifacts', appId, 'users', userId);
+            const userDoc = await getDoc(userRef);
+            let gameData = (userDoc.exists() && userDoc.data().gamification) 
+                ? userDoc.data().gamification 
+                : { points: 0, goalsCompleted: 0, pomodoroCycles: 0, todosCompleted: 0, unlockedBadges: [], streak: 1, lastLogin: new Date().toISOString().split('T')[0] };
+
+            if (updates.points) gameData.points += updates.points;
+            if (updates.goalsCompleted) gameData.goalsCompleted += updates.goalsCompleted;
+            if (updates.pomodoroCycles) gameData.pomodoroCycles += updates.pomodoroCycles;
+            if (updates.todosCompleted) gameData.todosCompleted += updates.todosCompleted;
+
+            // Check for new badges
+            const newBadges = [];
+            if (gameData.goalsCompleted >= 1 && !gameData.unlockedBadges.includes('goal_1')) newBadges.push('goal_1');
+            if (gameData.goalsCompleted >= 10 && !gameData.unlockedBadges.includes('goal_10')) newBadges.push('goal_10');
+            if (gameData.pomodoroCycles >= 1 && !gameData.unlockedBadges.includes('pomodoro_1')) newBadges.push('pomodoro_1');
+            if (gameData.pomodoroCycles >= 25 && !gameData.unlockedBadges.includes('pomodoro_25')) newBadges.push('pomodoro_25');
+            if (gameData.todosCompleted >= 10 && !gameData.unlockedBadges.includes('todo_10')) newBadges.push('todo_10');
+            if (gameData.streak >= 3 && !gameData.unlockedBadges.includes('streak_3')) newBadges.push('streak_3');
+            if (gameData.streak >= 7 && !gameData.unlockedBadges.includes('streak_7')) newBadges.push('streak_7');
+            
+            if (newBadges.length > 0) {
+                gameData.unlockedBadges.push(...newBadges);
+                newBadges.forEach(badgeId => {
+                    showToast(`Novo emblema desbloqueado: ${allBadges[badgeId].title}!`, 'info');
+                });
+            }
+
+            await setDoc(userRef, { gamification: gameData }, { merge: true });
+        }
+
+        async function updateLoginStreak() {
+            if (!userId) return;
+            const userRef = doc(db, 'artifacts', appId, 'users', userId);
+            const userDoc = await getDoc(userRef);
+            if (!userDoc.exists() || !userDoc.data().gamification) return; // Wait for initialization on signup
+
+            let gameData = userDoc.data().gamification;
+            const today = new Date().toISOString().split('T')[0];
+            const lastLogin = gameData.lastLogin;
+
+            if (today !== lastLogin) {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+                if (lastLogin === yesterdayStr) {
+                    gameData.streak = (gameData.streak || 1) + 1;
+                } else {
+                    gameData.streak = 1;
+                }
+                gameData.lastLogin = today;
+                await setDoc(userRef, { gamification: gameData }, { merge: true });
+            }
+        }
+        
+        async function openGamificationModal() {
+            const userRef = doc(db, 'artifacts', appId, 'users', userId);
+            const userDoc = await getDoc(userRef);
+            const gameData = userDoc.exists() ? userDoc.data().gamification : { points: 0, unlockedBadges: [] };
+
+            const badgesHtml = Object.entries(allBadges).map(([id, badge]) => {
+                const unlocked = gameData.unlockedBadges.includes(id);
+                return `
+                    <div class="flex flex-col items-center text-center p-2 glassmorphism rounded-lg ${unlocked ? '' : 'badge-locked'}">
+                        <svg class="h-16 w-16 mb-2 ${unlocked ? 'text-yellow-400' : 'text-gray-500'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.333a2 2 0 001.293 1.855l.293.146a2 2 0 011.02 2.667l-.292.585a2 2 0 00.415 2.25l.3.3a2 2 0 010 2.828l-.3.3a2 2 0 00-.415 2.25l.292.585a2 2 0 01-1.02 2.667l-.293.146a2 2 0 00-1.293 1.855V17a1 1 0 11-2 0v-1.333a2 2 0 00-1.293-1.855l-.293-.146a2 2 0 01-1.02-2.667l.292-.585a2 2 0 00-.415-2.25l-.3-.3a2 2 0 010-2.828l.3-.3a2 2 0 00.415-2.25l-.292-.585a2 2 0 011.02-2.667l.293-.146A2 2 0 009 4.333V3a1 1 0 011-1zm0 4a3 3 0 100 6 3 3 0 000-6z" clip-rule="evenodd" /></svg>
+                        <p class="font-bold text-sm">${badge.title}</p>
+                        <p class="text-xs opacity-70">${badge.description}</p>
+                    </div>
+                `;
+            }).join('');
+            
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">Meu Progresso e Recompensas</h3>
+                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div class="space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
+                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="glassmorphism p-4 rounded-lg">
+                            <p class="text-3xl font-bold">${gameData.points || 0}</p>
+                            <p class="text-sm opacity-80">Pontos</p>
+                        </div>
+                         <div class="glassmorphism p-4 rounded-lg">
+                            <p class="text-3xl font-bold">${gameData.goalsCompleted || 0}</p>
+                            <p class="text-sm opacity-80">Metas</p>
+                        </div>
+                        <div class="glassmorphism p-4 rounded-lg">
+                            <p class="text-3xl font-bold">${gameData.pomodoroCycles || 0}</p>
+                            <p class="text-sm opacity-80">Ciclos Foco</p>
+                        </div>
+                        <div class="glassmorphism p-4 rounded-lg">
+                            <p class="text-3xl font-bold">${gameData.streak || 1} dias</p>
+                            <p class="text-sm opacity-80">Sequência</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-4">Emblemas</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            ${badgesHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+            openModal(modalHTML, true, 'max-w-4xl');
+        }
+
+        // --- METAS (GOALS) ---
+        function renderGoalsAndFilters() {
+            const goalsContainer = document.getElementById('goals-container');
+            const categoryFiltersContainer = document.getElementById('category-filters');
+
+            const pendingDocs = allGoalDocs.filter(doc => !doc.data().completed);
+            
+            const categories = [...new Set(pendingDocs.map(doc => doc.data().category).filter(c => c && c.trim() !== ''))];
+            let filtersHtml = `<button data-category="all" class="px-3 py-1 text-sm rounded-full transition-colors ${currentCategoryFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-white/10 hover:bg-white/20'}">Todas</button>`;
+            categories.forEach(cat => {
+                filtersHtml += `<button data-category="${cat}" class="px-3 py-1 text-sm rounded-full transition-colors ${currentCategoryFilter === cat ? 'bg-blue-600 text-white' : 'bg-white/10 hover:bg-white/20'}">${cat}</button>`;
+            });
+            categoryFiltersContainer.innerHTML = filtersHtml;
+
+            const filteredDocs = currentCategoryFilter === 'all' 
+                ? pendingDocs 
+                : pendingDocs.filter(doc => doc.data().category === currentCategoryFilter);
+
+            let goalsHtml = '';
+            if (filteredDocs.length > 0) {
+                filteredDocs.forEach(doc => goalsHtml += renderGoal(doc.id, doc.data()));
+            } else {
+                 goalsHtml = `<div class="text-center py-8 text-gray-400">
+                        <p>Nenhuma meta pendente encontrada.</p>
+                        <p class="text-sm">${currentCategoryFilter === 'all' ? 'Adicione uma nova meta ou veja suas conquistas no arquivo!' : `Tente selecionar outra categoria.`}</p>
+                    </div>`;
+            }
+            goalsContainer.innerHTML = goalsHtml;
+        }
+
+        function attachGoalListeners() {
+            const goalsContainer = document.getElementById('goals-container');
+            const categoryFiltersContainer = document.getElementById('category-filters');
+            const goalsCollection = getCollectionRef('goals');
+            
+            onSnapshot(query(goalsCollection), (snapshot) => {
+                allGoalDocs = snapshot.docs;
+                renderGoalsAndFilters();
+            });
+            
+            document.getElementById('add-goal-button').onclick = () => openGoalModal();
+            
+            categoryFiltersContainer.addEventListener('click', e => {
+                const button = e.target.closest('button[data-category]');
+                if (button) {
+                    currentCategoryFilter = button.dataset.category;
+                    renderGoalsAndFilters();
+                }
+            });
+            
+            goalsContainer.addEventListener('click', async e => {
+                const target = e.target;
+                const button = target.closest('button');
+                
+                if (button && button.dataset.id) {
+                    const goalId = button.dataset.id;
+                    if (button.dataset.action === 'edit') {
+                        getDoc(getDocRef('goals', goalId)).then(doc => openGoalModal(goalId, doc.data()));
+                    }
+                    if (button.dataset.action === 'delete') {
+                        openConfirmModal('Confirmar Exclusão', 'Tem certeza que deseja apagar esta meta e todos os seus passos? Esta ação não pode ser desfeita.', () => {
+                             deleteDoc(getDocRef('goals', goalId));
+                        });
+                    }
+                    if (button.dataset.action === 'toggle') {
+                         getDoc(getDocRef('goals', goalId)).then(doc => {
+                             const currentStatus = doc.data().completed;
+                             updateDoc(getDocRef('goals', goalId), { completed: !currentStatus, completedAt: !currentStatus ? new Date().toISOString() : null });
+                             if (!currentStatus) {
+                                 showToast('Meta movida para o Arquivo de Conquistas!', 'info');
+                                 updateGamification({ points: 50, goalsCompleted: 1 });
+                             }
+                         });
+                    }
+                }
+
+                 if (target.dataset.action === 'toggle-subtask') {
+                    const goalId = target.dataset.goalId;
+                    const index = parseInt(target.dataset.subtaskIndex);
+                    const goalRef = getDocRef('goals', goalId);
+                    const goalDoc = await getDoc(goalRef);
+                    if (goalDoc.exists()) {
+                        const goalData = goalDoc.data();
+                        const subtasks = goalData.subtasks || [];
+                        const wasCompleted = subtasks[index].completed;
+                        if (target.checked && !wasCompleted) {
+                            updateGamification({ points: 10 });
+                        }
+                        subtasks[index].completed = target.checked;
+                        await updateDoc(goalRef, { subtasks });
+                    }
+                }
+
+                if (button && button.dataset.action === 'delete-subtask') {
+                    const goalId = button.dataset.goalId;
+                    const index = parseInt(button.dataset.subtaskIndex);
+                    const goalRef = getDocRef('goals', goalId);
+                    const goalDoc = await getDoc(goalRef);
+                    if (goalDoc.exists()) {
+                        const goalData = goalDoc.data();
+                        let subtasks = goalData.subtasks || [];
+                        subtasks.splice(index, 1);
+                        await updateDoc(goalRef, { subtasks });
+                    }
+                }
+            });
+
+             goalsContainer.addEventListener('submit', async e => {
+                e.preventDefault();
+                const form = e.target;
+                if (form.dataset.action === 'add-subtask') {
+                    const goalId = form.dataset.goalId;
+                    const input = form.querySelector('input[type="text"]');
+                    const text = input.value.trim();
+
+                    if (text) {
+                        const goalRef = getDocRef('goals', goalId);
+                        const goalDoc = await getDoc(goalRef);
+                        if (goalDoc.exists()) {
+                            const goalData = goalDoc.data();
+                            const subtasks = goalData.subtasks || [];
+                            subtasks.push({ text: text, completed: false });
+                            await updateDoc(goalRef, { subtasks });
+                            input.value = '';
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderGoal(id, data) {
+            const deadline = data.deadline ? new Date(data.deadline).toLocaleDateString() : 'Sem prazo';
+            
+            const subtasks = data.subtasks || [];
+            const completedSubtasks = subtasks.filter(st => st.completed).length;
+            const progress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0;
+            
+            const color = categoryToColor(data.category);
+
+            const subtasksHtml = `
+                <div class="mt-4 pt-4 border-t border-white/10">
+                    <div class="flex justify-between items-center mb-2">
+                        <h5 class="text-sm font-semibold">Passos para o Sucesso</h5>
+                        <span class="text-xs font-mono">${completedSubtasks}/${subtasks.length}</span>
+                    </div>
+                    <div class="w-full bg-black/20 rounded-full h-1.5 mb-3">
+                        <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                    </div>
+                    <ul class="space-y-1 text-sm max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                        ${subtasks.map((subtask, index) => `
+                            <li class="flex items-center justify-between group p-1 rounded-md hover:bg-black/20">
+                                <div class="flex items-center flex-grow">
+                                    <input type="checkbox" data-goal-id="${id}" data-subtask-index="${index}" data-action="toggle-subtask" ${subtask.completed ? 'checked' : ''} class="w-4 h-4 rounded text-blue-500 bg-gray-700 border-gray-600 focus:ring-blue-600 cursor-pointer">
+                                    <span class="ml-2 ${subtask.completed ? 'line-through text-gray-500' : ''}">${subtask.text}</span>
+                                </div>
+                                <button data-goal-id="${id}" data-subtask-index="${index}" data-action="delete-subtask" class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                                </button>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <form class="flex gap-2 mt-2" data-action="add-subtask" data-goal-id="${id}">
+                        <input type="text" placeholder="Novo passo..." class="flex-grow bg-white/10 border-none rounded-md px-2 py-1 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400">
+                        <button type="submit" class="bg-blue-500/50 hover:bg-blue-500/80 text-white font-bold p-1.5 rounded-md transition-colors flex-shrink-0">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </form>
+                </div>
+            `;
+            
+            return `
+                <div class="glassmorphism rounded-xl p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <h4 class="font-bold text-lg">${data.title}</h4>
+                                ${data.category ? `<span class="${color.tagBg} ${color.tagText} text-xs font-semibold px-2.5 py-0.5 rounded-full">${data.category}</span>` : ''}
+                            </div>
+                            <p class="text-sm opacity-80">${data.description}</p>
+                            ${data.summary ? `<p class="text-xs mt-2 bg-black bg-opacity-20 p-2 rounded-md"><em>${data.summary}</em></p>` : ''}
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0 ml-4">
+                             <button data-id="${id}" data-action="toggle" class="p-1 rounded-full hover:bg-white/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </button>
+                            <button data-id="${id}" data-action="edit" class="p-1 rounded-full hover:bg-white/20"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                            <button data-id="${id}" data-action="delete" class="p-1 rounded-full hover:bg-white/20"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>
+                        </div>
+                    </div>
+                    <div class="text-xs opacity-60 mt-2">Prazo: ${deadline}</div>
+                    ${subtasksHtml}
+                </div>
+            `;
+        }
+        
+        function openGoalModal(id = null, data = {}) {
+            const modalHTML = `
+                <h3 class="text-2xl font-bold mb-6">${id ? 'Editar Meta' : 'Nova Meta'}</h3>
+                <form id="goal-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Título</label>
+                        <input type="text" id="goal-title" value="${data.title || ''}" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Categoria</label>
+                        <input type="text" id="goal-category" value="${data.category || ''}" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" placeholder="Ex: Estudos, Carreira, Saúde">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
+                        <textarea id="goal-description" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" rows="3">${data.description || ''}</textarea>
+                    </div>
+                     <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Resumo/Conclusão (O que aprendi?)</label>
+                        <textarea id="goal-summary" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" rows="2">${data.summary || ''}</textarea>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Data Limite</label>
+                        <input type="date" id="goal-deadline" value="${data.deadline || ''}" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div class="flex justify-end gap-4">
+                        <button type="button" id="cancel-goal" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Salvar</button>
+                    </div>
+                </form>
+            `;
+            openModal(modalHTML);
+            
+            document.getElementById('cancel-goal').onclick = closeModal;
+            document.getElementById('goal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const goalData = {
+                    title: document.getElementById('goal-title').value,
+                    category: document.getElementById('goal-category').value.trim(),
+                    description: document.getElementById('goal-description').value,
+                    summary: document.getElementById('goal-summary').value,
+                    deadline: document.getElementById('goal-deadline').value,
+                    completed: data.completed || false,
+                    subtasks: data.subtasks || [],
+                    completedAt: data.completedAt || null,
+                };
+                if (id) {
+                    await updateDoc(getDocRef('goals', id), goalData);
+                } else {
+                    await addDoc(getCollectionRef('goals'), goalData);
+                }
+                closeModal();
+            });
+        }
+        
+        function openArchiveModal() {
+            const completedGoals = allGoalDocs.filter(doc => doc.data().completed);
+
+            let archiveHtml = completedGoals.length > 0 
+                ? completedGoals.map(doc => renderArchivedGoal(doc.id, doc.data())).join('')
+                : `<div class="text-center py-8 text-gray-400">
+                        <p>Você ainda não concluiu nenhuma meta.</p>
+                        <p class="text-sm">Continue focado e suas vitórias aparecerão aqui!</p>
+                   </div>`;
+            
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">Arquivo de Conquistas</h3>
+                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div id="archive-container" class="space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                    ${archiveHtml}
+                </div>
+            `;
+            openModal(modalHTML, true, 'max-w-3xl');
+
+            document.getElementById('archive-container').addEventListener('click', e => {
+                const button = e.target.closest('button');
+                if (!button || !button.dataset.id) return;
+                
+                const goalId = button.dataset.id;
+                
+                if (button.dataset.action === 'restore') {
+                    updateDoc(getDocRef('goals', goalId), { completed: false, completedAt: null });
+                    showToast('Meta restaurada para a lista principal!', 'info');
+                }
+
+                if (button.dataset.action === 'delete-permanent') {
+                     openConfirmModal('Exclusão Permanente', 'Esta ação é irreversível. Deseja apagar permanentemente esta conquista?', () => {
+                        deleteDoc(getDocRef('goals', goalId));
+                    });
+                }
+            });
+        }
+        
+        function renderArchivedGoal(id, data) {
+            const completedDate = data.completedAt ? new Date(data.completedAt).toLocaleDateString() : 'Data não registrada';
+            const color = categoryToColor(data.category);
+             return `
+                <div class="glassmorphism rounded-xl p-4 opacity-80">
+                    <div class="flex justify-between items-start">
+                        <div>
+                             <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <h4 class="font-bold text-lg line-through">${data.title}</h4>
+                                ${data.category ? `<span class="${color.tagBg} ${color.tagText} text-xs font-semibold px-2.5 py-0.5 rounded-full">${data.category}</span>` : ''}
+                            </div>
+                            <p class="text-sm opacity-80">${data.description}</p>
+                            ${data.summary ? `<p class="text-xs mt-2 bg-black bg-opacity-20 p-2 rounded-md"><em>${data.summary}</em></p>` : ''}
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0 ml-4">
+                             <button data-id="${id}" data-action="restore" title="Restaurar Meta" class="p-1 rounded-full hover:bg-white/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button data-id="${id}" data-action="delete-permanent" title="Excluir Permanentemente" class="p-1 rounded-full hover:bg-white/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                     <div class="text-xs opacity-60 mt-2">Concluída em: ${completedDate}</div>
+                </div>
+            `;
+        }
+        
+        // --- STATS ---
+        function openStatsModal() {
+            const completedGoals = allGoalDocs.filter(doc => doc.data().completed);
+            const pendingGoals = allGoalDocs.filter(doc => !doc.data().completed);
+            const totalGoals = allGoalDocs.length;
+            const completionRate = totalGoals > 0 ? ((completedGoals.length / totalGoals) * 100).toFixed(1) : 0;
+
+            const categoryCounts = completedGoals.reduce((acc, doc) => {
+                const category = doc.data().category || 'Sem Categoria';
+                acc[category] = (acc[category] || 0) + 1;
+                return acc;
+            }, {});
+
+            const categoryLabels = Object.keys(categoryCounts);
+            const categoryData = Object.values(categoryCounts);
+            const categoryColors = categoryLabels.map(label => categoryToColor(label));
+
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">Estatísticas de Progresso</h3>
+                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div class="space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div class="glassmorphism p-4 rounded-lg">
+                            <p class="text-3xl font-bold">${completedGoals.length}</p>
+                            <p class="text-sm opacity-80">Metas Concluídas</p>
+                        </div>
+                         <div class="glassmorphism p-4 rounded-lg">
+                            <p class="text-3xl font-bold">${pendingGoals.length}</p>
+                            <p class="text-sm opacity-80">Metas Pendentes</p>
+                        </div>
+                        <div class="glassmorphism p-4 rounded-lg">
+                            <p class="text-3xl font-bold">${completionRate}%</p>
+                            <p class="text-sm opacity-80">Taxa de Conclusão</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                        <div class="glassmorphism p-4 rounded-lg">
+                             <h4 class="font-bold mb-4 text-center">Visão Geral</h4>
+                            <canvas id="completion-chart"></canvas>
+                        </div>
+                         <div class="glassmorphism p-4 rounded-lg">
+                             <h4 class="font-bold mb-4 text-center">Conquistas por Categoria</h4>
+                            <canvas id="category-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+            openModal(modalHTML, true, 'max-w-4xl');
+
+            // Render Charts
+            new Chart(document.getElementById('completion-chart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Concluídas', 'Pendentes'],
+                    datasets: [{
+                        data: [completedGoals.length, pendingGoals.length],
+                        backgroundColor: ['rgba(34, 197, 94, 0.7)', 'rgba(239, 68, 68, 0.7)'],
+                        borderColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: { plugins: { legend: { labels: { color: 'white' } } } }
+            });
+
+            if (categoryLabels.length > 0) {
+                 new Chart(document.getElementById('category-chart'), {
+                    type: 'bar',
+                    data: {
+                        labels: categoryLabels,
+                        datasets: [{
+                            label: 'Metas Concluídas',
+                            data: categoryData,
+                            backgroundColor: categoryColors.map(c => c.bg),
+                            borderColor: categoryColors.map(c => c.border),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { 
+                        scales: { y: { beginAtZero: true, ticks: { color: 'white', stepSize: 1 } }, x: { ticks: { color: 'white' } } },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            } else {
+                document.getElementById('category-chart').parentElement.innerHTML += '<p class="text-center text-gray-400 mt-4">Nenhuma meta concluída com categoria para exibir.</p>';
+            }
+        }
+        
+        // --- DIÁRIO ---
+        function renderJournalEntry(id, data) {
+            const date = new Date(data.createdAt).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
+            return `
+                <div class="glassmorphism rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="text-xs font-semibold opacity-70">${date}</p>
+                        <div class="flex items-center space-x-2">
+                            <button data-id="${id}" data-action="edit" title="Editar" class="p-1 rounded-full hover:bg-white/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                            </button>
+                            <button data-id="${id}" data-action="delete" title="Excluir" class="p-1 rounded-full hover:bg-white/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="entry-content-${id}" data-text="${encodeURIComponent(data.text)}">
+                        <p class="text-sm opacity-90 whitespace-pre-wrap">${data.text}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function openJournalModal() {
+            const modalHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">Diário de Reflexões</h3>
+                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <form id="journal-form" class="mb-6">
+                    <textarea id="journal-text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" rows="4" placeholder="Como foi seu dia? O que você aprendeu?" required></textarea>
+                    <div class="flex justify-end mt-2">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Salvar Entrada</button>
+                    </div>
+                </form>
+                <div id="journal-entries-container" class="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
+                    <p class="text-gray-400 text-center">Carregando entradas...</p>
+                </div>
+            `;
+            
+            let unsubscribe = null;
+            const handleClose = () => { if (unsubscribe) unsubscribe(); };
+            openModal(modalHTML, true, 'max-w-3xl', handleClose);
+            
+            const journalForm = document.getElementById('journal-form');
+            const entriesContainer = document.getElementById('journal-entries-container');
+            
+            journalForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const textarea = document.getElementById('journal-text');
+                const text = textarea.value.trim();
+                if (text) {
+                    await addDoc(getCollectionRef('journal'), { text: text, createdAt: new Date().toISOString() });
+                    textarea.value = '';
+                    showToast('Entrada salva!', 'success');
+                }
+            });
+
+            const q = query(getCollectionRef('journal'), orderBy("createdAt", "desc"));
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    entriesContainer.innerHTML = '<p class="text-gray-400 text-center">Nenhuma entrada no diário ainda. Escreva sua primeira reflexão!</p>';
+                    return;
+                }
+                entriesContainer.innerHTML = snapshot.docs.map(doc => renderJournalEntry(doc.id, doc.data())).join('');
+            });
+
+            entriesContainer.addEventListener('click', e => {
+                const button = e.target.closest('button');
+                if (!button || !button.dataset.id) return;
+                
+                const entryId = button.dataset.id;
+                const action = button.dataset.action;
+                const contentDiv = document.getElementById(`entry-content-${entryId}`);
+
+                if (action === 'delete') {
+                    openConfirmModal('Excluir Entrada', 'Tem certeza que deseja apagar esta entrada do diário?', () => {
+                        deleteDoc(getDocRef('journal', entryId));
+                    });
+                }
+
+                if (action === 'edit') {
+                    const currentText = decodeURIComponent(contentDiv.dataset.text);
+                    contentDiv.innerHTML = `
+                        <textarea class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white" rows="4">${currentText}</textarea>
+                        <div class="flex justify-end gap-2 mt-2">
+                            <button data-id="${entryId}" data-action="cancel-edit" class="bg-gray-600 hover:bg-gray-500 font-semibold py-1 px-3 rounded-lg text-sm">Cancelar</button>
+                            <button data-id="${entryId}" data-action="save-edit" class="bg-blue-600 hover:bg-blue-700 font-bold py-1 px-3 rounded-lg text-sm">Salvar</button>
+                        </div>
+                    `;
+                }
+
+                if (action === 'cancel-edit') {
+                    const originalText = decodeURIComponent(contentDiv.dataset.text);
+                    contentDiv.innerHTML = `<p class="text-sm opacity-90 whitespace-pre-wrap">${originalText}</p>`;
+                }
+                
+                if (action === 'save-edit') {
+                    const newText = contentDiv.querySelector('textarea').value.trim();
+                    if (newText) {
+                        updateDoc(getDocRef('journal', entryId), { text: newText })
+                            .then(() => showToast('Entrada atualizada!', 'success'));
+                    }
+                }
+            });
+        }
+
+        // --- POMODORO ---
+        let pomodoroInterval = null;
+        let pomodoroTimeRemaining = 25 * 60;
+        let pomodoroState = 'stopped'; // 'stopped', 'running', 'paused'
+        let pomodoroMode = 'focus'; // 'focus', 'shortBreak', 'longBreak'
+        const pomodoroDurations = { focus: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60 };
+        const originalTitle = document.title;
+        let audioCtx;
+
+        function attachPomodoroListeners() {
+            const timeDisplay = document.getElementById('pomodoro-time');
+            const startPauseButton = document.getElementById('pomodoro-start-pause');
+            const resetButton = document.getElementById('pomodoro-reset');
+            const modeButtonsContainer = document.getElementById('pomodoro-modes');
+
+            function updateTimerDisplay() {
+                const minutes = Math.floor(pomodoroTimeRemaining / 60);
+                const seconds = pomodoroTimeRemaining % 60;
+                const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                timeDisplay.textContent = formattedTime;
+                document.title = `${formattedTime} - ${originalTitle}`;
+            }
+
+            function playPomodoroSound() {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            }
+
+            function setPomodoroMode(newMode) {
+                clearInterval(pomodoroInterval);
+                pomodoroMode = newMode;
+                pomodoroState = 'stopped';
+                pomodoroTimeRemaining = pomodoroDurations[newMode];
+                updateTimerDisplay();
+                document.title = originalTitle;
+
+                startPauseButton.textContent = 'Iniciar';
+                startPauseButton.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+                startPauseButton.classList.add('bg-green-600', 'hover:bg-green-700');
+
+                modeButtonsContainer.querySelectorAll('button').forEach(btn => {
+                    if (btn.dataset.mode === newMode) {
+                        btn.classList.add('bg-blue-600', 'text-white');
+                        btn.classList.remove('bg-white/10', 'hover:bg-white/20');
+                    } else {
+                        btn.classList.remove('bg-blue-600', 'text-white');
+                        btn.classList.add('bg-white/10', 'hover:bg-white/20');
+                    }
+                });
+            }
+
+            function timerTick() {
+                pomodoroTimeRemaining--;
+                updateTimerDisplay();
+                if (pomodoroTimeRemaining <= 0) {
+                    clearInterval(pomodoroInterval);
+                    playPomodoroSound();
+                    
+                    if (pomodoroMode === 'focus') {
+                        showToast('Hora de uma pausa!', 'info');
+                        updateGamification({ points: 20, pomodoroCycles: 1 });
+                        setPomodoroMode('shortBreak');
+                    } else {
+                        showToast('De volta ao foco!', 'info');
+                        setPomodoroMode('focus');
+                    }
+                }
+            }
+
+            startPauseButton.addEventListener('click', () => {
+                if (pomodoroState === 'running') { // Pause
+                    pomodoroState = 'paused';
+                    clearInterval(pomodoroInterval);
+                    startPauseButton.textContent = 'Continuar';
+                    startPauseButton.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+                    startPauseButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                } else { // Start or Resume
+                    pomodoroState = 'running';
+                    pomodoroInterval = setInterval(timerTick, 1000);
+                    startPauseButton.textContent = 'Pausar';
+                    startPauseButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    startPauseButton.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+                }
+            });
+
+            resetButton.addEventListener('click', () => {
+                setPomodoroMode(pomodoroMode);
+            });
+
+            modeButtonsContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (button && button.dataset.mode) {
+                    setPomodoroMode(button.dataset.mode);
+                }
+            });
+        }
+
+        // --- AFAZERES (TODOS) ---
+        function attachTodoListeners() {
+            const todoForm = document.getElementById('todo-form');
+            const todoList = document.getElementById('todo-list');
+            const todosCollection = getCollectionRef('todos');
+            
+            onSnapshot(query(todosCollection), (snapshot) => {
+                let todosHtml = '';
+                snapshot.docs.forEach(doc => todosHtml += renderTodo(doc.id, doc.data()));
+                todoList.innerHTML = todosHtml;
+            });
+            
+            todoForm.addEventListener('submit', e => {
+                e.preventDefault();
+                const input = document.getElementById('todo-input');
+                if (input.value.trim() !== '') {
+                    addDoc(todosCollection, { text: input.value, completed: false });
+                    input.value = '';
+                }
+            });
+            
+            todoList.addEventListener('click', e => {
+                 const target = e.target.closest('li div button') || e.target.closest('li div input');
+                 if(!target) return;
+                 const todoId = target.dataset.id;
+                 
+                 if (target.type === 'checkbox') {
+                    const wasCompleted = target.dataset.wasCompleted === 'true';
+                    if (target.checked && !wasCompleted) {
+                        updateGamification({ points: 5, todosCompleted: 1 });
+                    }
+                    target.dataset.wasCompleted = target.checked;
+                     updateDoc(getDocRef('todos', todoId), { completed: target.checked });
+                 } else if (target.dataset.action === 'delete') {
+                    openConfirmModal('Confirmar Exclusão', 'Apagar esta tarefa?', () => {
+                         deleteDoc(getDocRef('todos', todoId));
+                    });
+                 }
+            });
+        }
+        
+        function renderTodo(id, data) {
+            return `
+                <li class="flex items-center justify-between group">
+                    <div class="flex items-center">
+                        <input type="checkbox" data-id="${id}" data-was-completed="${data.completed}" ${data.completed ? 'checked' : ''} class="w-4 h-4 rounded text-blue-500 bg-gray-700 border-gray-600 focus:ring-blue-600 cursor-pointer">
+                        <span class="ml-3 ${data.completed ? 'line-through text-gray-500' : ''}">${data.text}</span>
+                    </div>
+                    <button data-id="${id}" data-action="delete" class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    </button>
+                </li>
+            `;
+        }
+        
+        // --- LIVROS (BOOKS) ---
+        function attachBookListeners() {
+            const booksContainer = document.getElementById('books-container');
+            const booksCollection = getCollectionRef('books');
+
+            onSnapshot(query(booksCollection), (snapshot) => {
+                let booksHtml = '';
+                snapshot.docs.forEach(doc => booksHtml += renderBook(doc.id, doc.data()));
+                booksContainer.innerHTML = booksHtml || '<p class="text-sm text-gray-400">Nenhum livro adicionado.</p>';
+            });
+
+            document.getElementById('add-book-button').onclick = () => openBookModal();
+            
+            booksContainer.addEventListener('change', e => {
+                 if (e.target.dataset.action === 'update-page') {
+                     const bookId = e.target.dataset.id;
+                     const newPage = e.target.value;
+                     updateDoc(getDocRef('books', bookId), { page: newPage });
+                 }
+            });
+            booksContainer.addEventListener('click', e => {
+                const target = e.target.closest('button');
+                if(!target || target.dataset.action !== 'delete-book') return;
+                const bookId = target.dataset.id;
+                openConfirmModal('Confirmar Exclusão', 'Apagar este livro da lista?', () => {
+                    deleteDoc(getDocRef('books', bookId));
+                });
+            });
+        }
+        
+        function renderBook(id, data) {
+             return `
+                <div class="text-sm">
+                    <div class="flex justify-between items-center">
+                        <p class="font-semibold">${data.title}</p>
+                        <button data-id="${id}" data-action="delete-book" class="text-gray-500 hover:text-red-400">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <label class="text-xs">Pág:</label>
+                        <input type="number" data-id="${id}" data-action="update-page" value="${data.page || 0}" class="w-20 bg-white bg-opacity-20 border-none rounded-md px-2 py-1 text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-400">
+                    </div>
+                </div>
+            `;
+        }
+        
+        function openBookModal() {
+            const modalHTML = `
+                <h3 class="text-2xl font-bold mb-6">Adicionar Livro</h3>
+                <form id="book-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Título do Livro</label>
+                        <input type="text" id="book-title" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" required>
+                    </div>
+                    <div class="flex justify-end gap-4">
+                        <button type="button" id="modal-close-button-custom" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Adicionar</button>
+                    </div>
+                </form>
+            `;
+            openModal(modalHTML);
+            document.getElementById('modal-close-button-custom').onclick = closeModal;
+            document.getElementById('book-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await addDoc(getCollectionRef('books'), { title: document.getElementById('book-title').value, page: 0 });
+                closeModal();
+            });
+        }
+        
+        // --- IMAGENS (IMAGES) ---
+        function attachImageListeners() {
+            const imagesContainer = document.getElementById('images-container');
+            const imagesCollection = getCollectionRef('images');
+
+            onSnapshot(query(imagesCollection), (snapshot) => {
+                let imagesHtml = '';
+                snapshot.docs.forEach(doc => imagesHtml += renderImage(doc.id, doc.data()));
+                imagesContainer.innerHTML = imagesHtml || '<p class="text-xs text-gray-400 col-span-2 text-center">Adicione imagens que te inspiram.</p>';
+            });
+            
+             document.getElementById('add-image-button').onclick = () => openImageModal();
+             
+             imagesContainer.addEventListener('click', e => {
+                 const target = e.target.closest('button');
+                 if(!target || target.dataset.action !== 'delete-image') return;
+                 openConfirmModal('Confirmar Exclusão', 'Apagar esta imagem do painel?', () => {
+                    deleteDoc(getDocRef('images', target.dataset.id));
+                 });
+             });
+        }
+        
+        function renderImage(id, data) {
+            return `
+                <div class="relative group">
+                    <img src="${data.url}" alt="${data.description}" class="w-full h-24 object-cover rounded-lg">
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p class="text-white text-xs text-center p-1">${data.description}</p>
+                    </div>
+                     <button data-id="${id}" data-action="delete-image" class="absolute top-1 right-1 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                     </button>
+                </div>
+            `;
+        }
+        
+        function openImageModal() {
+             const modalHTML = `
+                <h3 class="text-2xl font-bold mb-6">Adicionar Imagem</h3>
+                <form id="image-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">URL da Imagem</label>
+                        <input type="url" id="image-url" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white" required>
+                    </div>
+                     <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
+                        <input type="text" id="image-description" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div class="flex justify-end gap-4">
+                        <button type="button" id="modal-close-button-custom" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Adicionar</button>
+                    </div>
+                </form>
+            `;
+            openModal(modalHTML);
+            document.getElementById('modal-close-button-custom').onclick = closeModal;
+            document.getElementById('image-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await addDoc(getCollectionRef('images'), { 
+                    url: document.getElementById('image-url').value,
+                    description: document.getElementById('image-description').value
+                });
+                closeModal();
+            });
+        }
+        
+        // --- CONFIGURAÇÕES (SETTINGS) ---
+        async function openSettingsModal() {
+             const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId));
+             const settings = userDoc.data() || {};
+             const modalHTML = `
+                 <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold">Configurações de Aparência</h3>
+                    <button id="modal-close-button" class="p-1 rounded-full hover:bg-white/20">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <form id="settings-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">URL da Imagem de Fundo</label>
+                        <input type="url" id="bg-image-url" value="${settings.backgroundImage || ''}" placeholder="Deixe em branco para remover" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div class="mb-4 flex items-center gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Cor do Texto Principal</label>
+                            <input type="color" id="text-color" value="${settings.textColor || '#FFFFFF'}" class="w-16 h-10 bg-gray-700 border-none cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Cor dos Cards</label>
+                            <input type="color" id="card-color" value="${settings.cardColor || '#FFFFFF'}" class="w-16 h-10 bg-gray-700 border-none cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-4 mt-8">
+                        <button type="button" id="modal-cancel-button" class="bg-gray-600 hover:bg-gray-500 font-semibold py-2 px-4 rounded-lg">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">Salvar</button>
+                    </div>
+                </form>
+            `;
+            openModal(modalHTML);
+            document.getElementById('modal-cancel-button').onclick = closeModal;
+            document.getElementById('settings-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const userSettings = {
+                    backgroundImage: document.getElementById('bg-image-url').value,
+                    textColor: document.getElementById('text-color').value,
+                    cardColor: document.getElementById('card-color').value
+                };
+                await setDoc(doc(db, 'artifacts', appId, 'users', userId), userSettings, { merge: true });
+                closeModal();
+                showToast('Configurações salvas!', 'success');
+            });
+        }
+    </script>
+</body>
+</html>
+
