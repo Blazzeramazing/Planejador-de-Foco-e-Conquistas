@@ -1305,7 +1305,7 @@
             });
             
             todoList.addEventListener('click', e => {
-                 const target = e.target.closest('li div button') || e.target.closest('li div input');
+                 const target = e.target.closest('li button') || e.target.closest('li input');
                  if(!target) return;
                  const todoId = target.dataset.id;
                  
